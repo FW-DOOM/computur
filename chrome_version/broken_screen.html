@@ -184,14 +184,7 @@ impacts.forEach(imp => {
   ctx.beginPath(); ctx.arc(imp.x,imp.y,4,0,Math.PI*2); ctx.fill();
 });
 
-// ── 7. Glass fragment dots ──
-for (let i=0;i<2200;i++) {
-  const px=r(0,W), py=r(0,H), rad=r(0.4,2.2), a=r(0.15,0.75);
-  ctx.fillStyle=`rgba(255,255,255,${a})`;
-  ctx.beginPath(); ctx.arc(px,py,rad,0,Math.PI*2); ctx.fill();
-}
-
-// ── 8. Vignette (darken edges) ──
+// ── 7. Vignette (darken edges) ──
 const vg = ctx.createRadialGradient(W/2,H/2,H*0.3, W/2,H/2,H*0.85);
 vg.addColorStop(0,'rgba(0,0,0,0)');
 vg.addColorStop(1,'rgba(0,0,0,0.55)');
@@ -206,34 +199,40 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-// ── Play sound + fullscreen on first interaction ──
+// ── Fullscreen + sound — must wait for a user gesture ──
 let started = false;
-function start() {
-  if (started) return; started = true;
+function start(e) {
+  if (started) return;
+  started = true;
   crackSound();
-  document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(()=>{});
+  // only request fullscreen on devices that support it (not iOS Safari standalone)
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (!isIOS && document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
 }
-document.addEventListener('click',    start, { once:true });
-document.addEventListener('keydown',  start, { once:true });
-document.addEventListener('touchstart', start, { once:true });
-// auto-attempt fullscreen immediately too
-setTimeout(() => {
-  document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(()=>{});
-}, 200);
+document.addEventListener('click',     start, { once: true });
+document.addEventListener('keydown',   start, { once: true });
+document.addEventListener('touchstart',start, { once: true });
 
 // ── Block everything ──
 document.addEventListener('contextmenu', e => e.preventDefault());
 document.addEventListener('keydown', e => {
-  // block F5, F11, Ctrl+W/R/T etc
   if (['F5','F11','Escape'].includes(e.key) ||
      (e.ctrlKey && ['w','r','t','n','l','u'].includes(e.key.toLowerCase()))) {
     e.preventDefault();
   }
 });
-// re-enter fullscreen if they escape it
+// re-enter fullscreen if they exit — but only if not iOS (iOS has no fullscreen API)
+let reenterCooldown = false;
 document.addEventListener('fullscreenchange', () => {
-  if (!document.fullscreenElement) {
-    setTimeout(() => document.documentElement.requestFullscreen().catch(()=>{}), 300);
+  if (!document.fullscreenElement && started && !reenterCooldown) {
+    reenterCooldown = true;
+    setTimeout(() => {
+      document.documentElement.requestFullscreen().catch(() => {});
+      reenterCooldown = false;
+    }, 400);
   }
 });
 

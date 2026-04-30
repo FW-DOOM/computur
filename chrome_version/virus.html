@@ -11,8 +11,6 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas,monospace;overflow:hidden;color:#fff;user-select:none;}
-
-/* flash overlay */
 #flash{position:fixed;inset:0;pointer-events:none;z-index:8000;opacity:0;background:#ff0000;transition:opacity .05s;}
 
 /* topbar */
@@ -20,12 +18,12 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
 @keyframes pbar{0%,100%{background:#aa0000}50%{background:#ff0000}}
 
 /* REC badge */
-#rec-badge{position:fixed;top:10px;right:14px;background:#000;border:1px solid #ff2222;border-radius:3px;padding:3px 8px;font-size:11px;color:#ff4444;font-family:Consolas;z-index:300;animation:rec-blink 1s infinite;display:flex;align-items:center;gap:5px;}
-@keyframes rec-blink{0%,100%{opacity:1}50%{opacity:.4}}
-#rec-dot{width:8px;height:8px;background:#ff2222;border-radius:50%;}
+#rec-badge{position:fixed;top:10px;right:14px;background:#000;border:1px solid #ff2222;border-radius:3px;padding:3px 9px;font-size:11px;color:#ff4444;font-family:Consolas;z-index:300;animation:rec-blink 1s infinite;display:flex;align-items:center;gap:5px;}
+@keyframes rec-blink{0%,100%{opacity:1}50%{opacity:.3}}
+.rec-dot{width:8px;height:8px;background:#ff2222;border-radius:50%;}
 
 /* main */
-#main{width:100%;height:100%;background:radial-gradient(ellipse at center,#0d0005 0%,#000 80%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:38px;padding-bottom:70px;}
+#main{width:100%;height:100%;background:radial-gradient(ellipse at center,#0d0005 0%,#000 80%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:38px;padding-bottom:80px;}
 
 /* countdown */
 #cbox{background:#1a0000;border:2px solid #ff0000;border-radius:8px;padding:14px 40px;text-align:center;margin-bottom:16px;animation:glow 1s infinite;}
@@ -34,7 +32,7 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
 #ctimer{font-size:80px;font-weight:bold;color:#ff1111;font-family:Consolas;letter-spacing:8px;line-height:1;}
 #csub{font-size:11px;color:#ff5555;margin-top:4px;}
 
-/* threat box */
+/* threat */
 #threat{background:#0d0d0d;border:1px solid #330000;border-left:5px solid #ff0000;border-radius:3px;padding:14px 22px;max-width:780px;width:92%;margin-bottom:12px;}
 #ttitle{font-size:15px;font-weight:bold;color:#ff2222;margin-bottom:8px;}
 .tr{display:flex;gap:12px;margin:3px 0;font-size:11px;}
@@ -49,16 +47,28 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
 .litem{color:#44ff44;margin:1px 0;font-family:Consolas;animation:fi .2s;}
 @keyframes fi{from{opacity:0;transform:translateX(-6px)}to{opacity:1}}
 
-/* progress bar */
+/* progress */
 #prog{max-width:780px;width:92%;margin-bottom:14px;}
 #plabel{font-size:11px;color:#777;margin-bottom:4px;}
 #pbg{background:#1a0000;border:1px solid #440000;border-radius:2px;height:15px;overflow:hidden;}
 #pfill{height:100%;background:linear-gradient(90deg,#660000,#cc2200,#ff5500);width:0%;transition:width .3s;}
 
-/* factory reset btn */
+/* factory reset */
 #btnreset{background:#cc0000;color:#fff;border:none;padding:18px 56px;font-size:16px;font-weight:bold;border-radius:4px;cursor:pointer;letter-spacing:1px;animation:bp .5s infinite;text-transform:uppercase;margin-bottom:6px;}
 @keyframes bp{0%,100%{background:#cc0000;transform:scale(1)}50%{background:#ff0000;transform:scale(1.04);box-shadow:0 0 30px #ff0000bb}}
-#hint{font-size:10px;color:#0d0d0d;margin-top:4px;}
+#hint{font-size:10px;color:#222;margin-top:4px;}
+
+/* ── RESTORE DATA — always on top ── */
+#btn-restore{
+  position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+  background:#005500;color:#fff;border:2px solid #00aa00;
+  padding:14px 50px;font-size:15px;font-weight:bold;
+  border-radius:4px;cursor:pointer;letter-spacing:1px;
+  z-index:99999;text-transform:uppercase;white-space:nowrap;
+  animation:rp 1.2s infinite;
+}
+@keyframes rp{0%,100%{background:#005500;border-color:#00aa00}50%{background:#008800;border-color:#00ff00;box-shadow:0 0 22px #00ff0055}}
+#btn-restore:hover{background:#009900;}
 
 /* float errors */
 .float-error{position:fixed;background:#fff;border:1px solid #aaa;border-top:3px solid #cc0000;border-radius:0 0 3px 3px;padding:10px 12px;min-width:300px;max-width:380px;font-size:11px;color:#222;z-index:600;box-shadow:2px 2px 8px #00000066;animation:pop-in .15s ease-out;}
@@ -67,19 +77,16 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
 .float-titlebar.red{background:#cc0000;}
 .float-titlebar.orange{background:#cc6600;}
 .float-titlebar.dark{background:#1a1a1a;border-bottom:1px solid #333;}
-.float-titlebar.green{background:#005500;}
 .float-msg{color:#222;font-size:11px;line-height:1.5;}
 .float-btns{margin-top:8px;display:flex;gap:6px;}
 .float-btn{background:#e0e0e0;border:1px solid #999;color:#222;padding:3px 14px;font-size:11px;cursor:pointer;border-radius:2px;}
 .float-btn:hover{background:#d0d0d0;}
 .float-btn.red{background:#cc0000;color:#fff;border-color:#aa0000;font-weight:bold;}
 .float-btn.red:hover{background:#ff0000;}
-
-/* fake webcam popup */
-.cam-view{width:100%;height:80px;background:#0a0a0a;border:1px solid #333;position:relative;margin:6px 0;font-family:Consolas;font-size:10px;}
-.cam-rec{position:absolute;top:4px;left:6px;color:#ff2222;animation:rec-blink 1s infinite;}
-.cam-ts{position:absolute;bottom:4px;right:6px;color:#44ff44;}
-.cam-face{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:32px;height:40px;border:1px solid #444;border-radius:50% 50% 40% 40%;background:#1a1a1a;}
+.cam-view{width:100%;height:76px;background:#080808;border:1px solid #333;position:relative;margin:6px 0;}
+.cam-rec{position:absolute;top:4px;left:6px;color:#ff2222;font-size:10px;font-family:Consolas;animation:rec-blink 1s infinite;}
+.cam-ts{position:absolute;bottom:4px;right:6px;color:#44ff44;font-size:10px;font-family:Consolas;}
+.cam-outline{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:28px;height:36px;border:1px solid #444;border-radius:50% 50% 40% 40%;background:#111;}
 
 /* modal */
 #modal{display:none;position:fixed;inset:0;background:#000000cc;z-index:9000;align-items:center;justify-content:center;}
@@ -87,6 +94,14 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
 #mbox h2{color:#ff3333;font-size:15px;margin-bottom:10px;}
 #mbox p{color:#ffaaaa;font-size:11px;line-height:1.7;margin-bottom:16px;text-align:center;}
 #mbtn{width:100%;padding:16px;background:#cc0000;color:#fff;border:none;font-size:14px;font-weight:bold;cursor:pointer;border-radius:3px;animation:bp .5s infinite;}
+
+/* RESTORE screen */
+#restore-screen{display:none;position:fixed;inset:0;background:#001500;z-index:9800;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+#restore-screen h2{color:#00ff00;font-size:28px;margin-bottom:20px;}
+#restore-bar-bg{width:420px;max-width:82vw;height:22px;background:#002200;border:1px solid #00aa00;border-radius:3px;overflow:hidden;margin-bottom:12px;}
+#restore-bar{height:100%;background:linear-gradient(90deg,#004400,#00cc00);width:0%;transition:width .25s;}
+#restore-msg{color:#44ff44;font-size:13px;font-family:Consolas;margin-top:6px;}
+#restore-sub{color:#228822;font-size:11px;margin-top:10px;}
 
 /* BSOD */
 #bsod{display:none;position:fixed;inset:0;background:#0000aa;z-index:9999;padding:80px 140px;font-family:Consolas,monospace;}
@@ -101,7 +116,7 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
 /* I WARNED YOU */
 #warned{display:none;position:fixed;inset:0;background:#ff0000;z-index:9990;flex-direction:column;align-items:center;justify-content:center;text-align:center;animation:wflash .45s infinite;}
 @keyframes wflash{0%,100%{background:#ff0000}50%{background:#990000}}
-#warned h1{font-size:clamp(60px,10vw,96px);font-weight:900;color:#fff;font-family:Impact,sans-serif;letter-spacing:8px;animation:wshake .09s infinite;line-height:1;}
+#warned h1{font-size:clamp(58px,10vw,96px);font-weight:900;color:#fff;font-family:Impact,sans-serif;letter-spacing:8px;animation:wshake .09s infinite;line-height:1;}
 @keyframes wshake{0%,100%{transform:translate(0)}25%{transform:translate(-5px,2px)}75%{transform:translate(5px,-2px)}}
 #warned p{font-size:20px;color:#ffaaaa;margin:16px 0 8px;font-weight:bold;}
 #warned-stats{font-size:14px;color:#ffcccc;line-height:2.2;font-family:Consolas;margin-bottom:28px;}
@@ -111,112 +126,50 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
 #btn-warned-continue{background:#006600;color:#fff;border:3px solid #00aa00;padding:18px 50px;font-size:17px;font-weight:900;cursor:pointer;letter-spacing:2px;text-transform:uppercase;}
 #btn-warned-continue:hover{background:#009900;}
 
-/* fullscreen block */
+/* FREDDY */
+#jumpscare{display:none;position:fixed;inset:0;z-index:99999;background:#050000;align-items:center;justify-content:center;}
+.fnaf-wrap{animation:fnaf-rush .13s cubic-bezier(.1,0,.15,1);}
+@keyframes fnaf-rush{from{transform:scale(0.1) translateY(80px);opacity:.5;}to{transform:scale(1);opacity:1;}}
+.fnaf-face{width:290px;height:340px;background:#2a1200;border-radius:44% 44% 34% 34%/38% 38% 44% 44%;position:relative;box-shadow:0 0 90px #ff3300,0 0 180px #aa000044;animation:fnaf-bob .065s infinite;}
+@keyframes fnaf-bob{0%,100%{transform:translate(0,0) rotate(0deg);}25%{transform:translate(-6px,4px) rotate(-2.5deg);}75%{transform:translate(6px,-4px) rotate(2.5deg);}}
+.fnaf-hat{position:absolute;width:165px;height:58px;background:#140700;left:50%;top:-54px;transform:translateX(-50%);border-radius:3px 3px 0 0;}
+.fnaf-brim{position:absolute;width:238px;height:17px;background:#140700;left:50%;top:-17px;transform:translateX(-50%);border-radius:2px;}
+.fnaf-brow{position:absolute;width:72px;height:11px;background:#140700;border-radius:3px;top:63px;}
+.fnaf-brow.L{left:28px;transform:rotate(16deg);}
+.fnaf-brow.R{right:28px;transform:rotate(-16deg);}
+.fnaf-eye{position:absolute;width:84px;height:84px;background:#ffc300;border-radius:50%;top:78px;animation:eye-g .11s infinite;}
+@keyframes eye-g{0%,100%{box-shadow:0 0 22px #ffaa00;}50%{box-shadow:0 0 50px #ffee00,0 0 90px #ff8800;}}
+.fnaf-eye.L{left:28px;}.fnaf-eye.R{right:28px;}
+.fnaf-eye::after{content:'';width:32px;height:32px;background:#000;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
+.fnaf-nose{position:absolute;width:28px;height:19px;background:#cc5522;border-radius:50%;top:162px;left:50%;transform:translateX(-50%);}
+.fnaf-mouth{position:absolute;bottom:18px;left:14px;right:14px;height:114px;background:#000;border-radius:4px 4px 30px 30px;overflow:hidden;display:flex;flex-direction:column;}
+.fnaf-tt,.fnaf-tb{display:flex;justify-content:space-around;padding:0 6px;}
+.fnaf-tt{padding-top:3px;}.fnaf-tb{margin-top:auto;padding-bottom:3px;}
+.tu{width:20px;height:46px;background:#f0ede0;border-radius:0 0 5px 5px;}
+.td{width:20px;height:46px;background:#f0ede0;border-radius:5px 5px 0 0;}
+.fnaf-tongue{width:72px;height:26px;background:#bb2233;border-radius:0 0 18px 18px;position:absolute;bottom:24px;left:50%;transform:translateX(-50%);}
+
+/* glitch */
+@keyframes glitch-anim{
+  0%  {clip-path:inset(0 0 88% 0);transform:translate(-5px,0);}
+  20% {clip-path:inset(28% 0 48% 0);transform:translate(5px,0);}
+  40% {clip-path:inset(58% 0 22% 0);transform:translate(-3px,0);}
+  60% {clip-path:inset(78% 0 8% 0); transform:translate(3px,0);}
+  80% {clip-path:inset(12% 0 78% 0);transform:translate(-2px,0);}
+  100%{clip-path:inset(0 0 88% 0); transform:translate(0);}
+}
+.glitch-layer{position:fixed;inset:0;pointer-events:none;z-index:7900;background:rgba(0,255,0,.05);animation:glitch-anim .08s steps(1) 7;}
+
+/* fs block */
 #fs-block{display:none;position:fixed;inset:0;background:#000000ee;z-index:9997;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
 #fs-block h1{font-size:34px;color:#ff2222;margin-bottom:14px;}
 #fs-block p{font-size:15px;color:#ff8888;margin-bottom:28px;}
 #fs-btn{background:#cc0000;color:#fff;border:none;padding:14px 44px;font-size:15px;font-weight:bold;border-radius:3px;cursor:pointer;}
-
-/* ── FREDDY FAZBEAR JUMPSCARE ── */
-#jumpscare{
-  display:none;position:fixed;inset:0;z-index:99999;
-  background:#050000;
-  align-items:center;justify-content:center;flex-direction:column;
-}
-.fnaf-wrap{animation:fnaf-rush .14s cubic-bezier(.1,0,.2,1);}
-@keyframes fnaf-rush{
-  from{transform:scale(0.15) translateY(60px);opacity:.6;}
-  to  {transform:scale(1)     translateY(0);  opacity:1;}
-}
-.fnaf-face{
-  width:280px;height:320px;
-  background:#2a1200;
-  border-radius:44% 44% 34% 34% / 38% 38% 44% 44%;
-  position:relative;
-  box-shadow:0 0 80px #ff3300, 0 0 160px #aa000055;
-  animation:fnaf-bob .07s infinite;
-}
-@keyframes fnaf-bob{
-  0%,100%{transform:translate(0,0) rotate(0deg);}
-  25%{transform:translate(-5px,3px) rotate(-2deg);}
-  75%{transform:translate(5px,-3px) rotate(2deg);}
-}
-/* hat */
-.fnaf-hat{
-  position:absolute;
-  width:160px;height:55px;
-  background:#150800;
-  left:50%;top:-52px;transform:translateX(-50%);
-  border-radius:3px 3px 0 0;
-}
-.fnaf-brim{
-  position:absolute;
-  width:230px;height:16px;
-  background:#150800;
-  left:50%;top:-16px;transform:translateX(-50%);
-  border-radius:2px;
-}
-/* eyes */
-.fnaf-eye{
-  position:absolute;width:82px;height:82px;
-  background:#ffc300;border-radius:50%;top:75px;
-  box-shadow:0 0 22px #ffaa00, 0 0 50px #ff660077;
-  animation:eye-glow .12s infinite;
-}
-@keyframes eye-glow{0%,100%{box-shadow:0 0 22px #ffaa00;}50%{box-shadow:0 0 45px #ffdd00,0 0 80px #ff8800;}}
-.fnaf-eye.L{left:30px;}.fnaf-eye.R{right:30px;}
-.fnaf-eye::after{
-  content:'';width:30px;height:30px;background:#000;border-radius:50%;
-  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-}
-/* eyebrows (angry) */
-.fnaf-brow{
-  position:absolute;width:70px;height:10px;background:#150800;
-  border-radius:3px;top:62px;
-}
-.fnaf-brow.L{left:28px;transform:rotate(15deg);}
-.fnaf-brow.R{right:28px;transform:rotate(-15deg);}
-/* nose */
-.fnaf-nose{
-  position:absolute;width:26px;height:18px;background:#cc5522;border-radius:50%;
-  top:158px;left:50%;transform:translateX(-50%);
-}
-/* mouth */
-.fnaf-mouth{
-  position:absolute;bottom:18px;left:14px;right:14px;height:110px;
-  background:#000;border-radius:4px 4px 28px 28px;overflow:hidden;
-  display:flex;flex-direction:column;
-}
-.fnaf-teeth-top,.fnaf-teeth-bot{display:flex;justify-content:space-around;padding:0 6px;}
-.fnaf-teeth-top{padding-top:3px;}
-.fnaf-teeth-bot{margin-top:auto;padding-bottom:3px;}
-.tu{width:19px;height:44px;background:#f0ede0;border-radius:0 0 5px 5px;}
-.td{width:19px;height:44px;background:#f0ede0;border-radius:5px 5px 0 0;}
-.fnaf-tongue{
-  width:70px;height:24px;background:#bb2233;border-radius:0 0 16px 16px;
-  position:absolute;bottom:22px;left:50%;transform:translateX(-50%);
-}
-/* screen glitch */
-@keyframes glitch-anim{
-  0%  {clip-path:inset(0 0 90% 0);transform:translate(-4px,0);}
-  20% {clip-path:inset(30% 0 50% 0);transform:translate(4px,0);}
-  40% {clip-path:inset(60% 0 20% 0);transform:translate(-3px,0);}
-  60% {clip-path:inset(80% 0 5% 0);transform:translate(3px,0);}
-  80% {clip-path:inset(10% 0 80% 0);transform:translate(-2px,0);}
-  100%{clip-path:inset(0 0 90% 0);transform:translate(0,0);}
-}
-.glitch-overlay{
-  position:fixed;inset:0;pointer-events:none;z-index:7999;
-  background:rgba(0,255,0,.06);
-  animation:glitch-anim .08s steps(1) 6;
-}
 </style>
 </head>
 <body>
 <div id="flash"></div>
-
-<!-- REC badge -->
-<div id="rec-badge"><div id="rec-dot"></div>● REC &nbsp;|&nbsp; CAM</div>
+<div id="rec-badge"><div class="rec-dot"></div>● REC &nbsp;|&nbsp; CAM</div>
 
 <div id="topbar">
   <span id="topbar-msg">⚠ WINDOWS SECURITY — CRITICAL THREAT ACTIVE — IMMEDIATE ACTION REQUIRED</span>
@@ -229,7 +182,6 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
     <div id="ctimer">03:00</div>
     <div id="csub">All personal files will be permanently encrypted — ransom demand incoming</div>
   </div>
-
   <div id="threat">
     <div id="ttitle">⛔ &nbsp; ACTIVE THREAT DETECTED ON THIS DEVICE</div>
     <div class="tr"><span class="tk">Threat name:</span><span class="tv r">Ransom:Win32/Petya.A &nbsp;+&nbsp; Trojan:Win32/Wacatac.H!ml</span></div>
@@ -241,7 +193,6 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
     <div class="tr"><span class="tk">Data at risk:</span><span class="tv o"><span id="datamb">128</span> MB of personal files identified</span></div>
     <div class="tr"><span class="tk">Error codes:</span><span class="tv">0xC004F074 · 0x0000007E · 0x800701E3 · 0xFFFF9F04</span></div>
   </div>
-
   <div id="panels">
     <div class="panel">
       <div class="ptitle">🔒 ENCRYPTING — <span id="fcount">0</span> FILES</div>
@@ -252,15 +203,16 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
       <div id="litems"></div>
     </div>
   </div>
-
   <div id="prog">
     <div id="plabel">Encryption progress · <span id="ppct">0%</span> · <span id="fdone">0</span> files encrypted</div>
     <div id="pbg"><div id="pfill"></div></div>
   </div>
-
   <button id="btnreset" onclick="showModal()">⚠ &nbsp;&nbsp; FACTORY RESET &nbsp;—&nbsp; ONLY SAFE OPTION &nbsp;&nbsp; ⚠</button>
   <div id="hint">contact Microsoft Support: 1-800-642-7676</div>
 </div>
+
+<!-- RESTORE DATA — always on top, can't be blocked -->
+<button id="btn-restore" onclick="startRestore()">✔ &nbsp; RESTORE DATA &nbsp; ✔</button>
 
 <!-- factory reset modal -->
 <div id="modal">
@@ -272,7 +224,15 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
   </div>
 </div>
 
-<!-- I WARNED YOU (fires when countdown hits 0:00) -->
+<!-- RESTORE overlay -->
+<div id="restore-screen">
+  <h2>✔ &nbsp; Data Restoration In Progress</h2>
+  <div id="restore-bar-bg"><div id="restore-bar"></div></div>
+  <div id="restore-msg">Scanning file system...</div>
+  <div id="restore-sub">Please do not close this window</div>
+</div>
+
+<!-- I WARNED YOU -->
 <div id="warned">
   <h1>I WARNED YOU!</h1>
   <p>You ignored every warning. Your files are now permanently destroyed.</p>
@@ -312,12 +272,12 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
       <div class="fnaf-eye R"></div>
       <div class="fnaf-nose"></div>
       <div class="fnaf-mouth">
-        <div class="fnaf-teeth-top">
+        <div class="fnaf-tt">
           <div class="tu"></div><div class="tu"></div><div class="tu"></div>
           <div class="tu"></div><div class="tu"></div><div class="tu"></div>
         </div>
         <div class="fnaf-tongue"></div>
-        <div class="fnaf-teeth-bot">
+        <div class="fnaf-tb">
           <div class="td"></div><div class="td"></div><div class="td"></div>
           <div class="td"></div><div class="td"></div><div class="td"></div>
         </div>
@@ -334,7 +294,7 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
 </div>
 
 <script>
-// ── Audio ──
+// ── Audio context ──
 let actx=null;
 function getA(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();return actx;}
 function beep(f,d,v=.15,t='square'){
@@ -354,68 +314,109 @@ function megaScream(){
   beep(60,.9,.55,'sine');
 }
 
-// ── Freddy screech — harsh white noise burst ──
+// Freddy screech — white noise + sawtooth tone
 function fnafScreech(){
   try{
     const c=getA();
-    const sz=c.sampleRate*0.9,buf=c.createBuffer(1,sz,c.sampleRate);
-    const d=buf.getChannelData(0);
-    for(let i=0;i<sz;i++)d[i]=(Math.random()*2-1);
+    const sz=Math.floor(c.sampleRate*.9),buf=c.createBuffer(1,sz,c.sampleRate);
+    const dd=buf.getChannelData(0);
+    for(let i=0;i<sz;i++)dd[i]=(Math.random()*2-1);
     const src=c.createBufferSource();src.buffer=buf;
-    const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=1800;
+    const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=1600;
     const g=c.createGain();
-    g.gain.setValueAtTime(2.0,c.currentTime);
-    g.gain.exponentialRampToValueAtTime(.001,c.currentTime+0.9);
+    g.gain.setValueAtTime(2.2,c.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.9);
     src.connect(hp);hp.connect(g);g.connect(c.destination);
-    src.start();src.stop(c.currentTime+0.9);
-    // screaming tone on top
+    src.start();src.stop(c.currentTime+.9);
     const o=c.createOscillator(),og=c.createGain();
     o.connect(og);og.connect(c.destination);
     o.type='sawtooth';
     o.frequency.setValueAtTime(700,c.currentTime);
-    o.frequency.linearRampToValueAtTime(1800,c.currentTime+.25);
-    o.frequency.linearRampToValueAtTime(300,c.currentTime+.9);
-    og.gain.setValueAtTime(.9,c.currentTime);
+    o.frequency.linearRampToValueAtTime(2000,c.currentTime+.25);
+    o.frequency.linearRampToValueAtTime(250,c.currentTime+.9);
+    og.gain.setValueAtTime(1.0,c.currentTime);
     og.gain.exponentialRampToValueAtTime(.001,c.currentTime+.9);
     o.start();o.stop(c.currentTime+.95);
   }catch(e){}
 }
 
-// heartbeat background tension
-let hbStarted=false;
+// Heartbeat background tension
+let hbOn=false;
 function startHeartbeat(){
-  if(hbStarted)return;hbStarted=true;
-  function beat(){beep(55,.09,.08,'sine');setTimeout(()=>beep(50,.07,.05,'sine'),130);}
+  if(hbOn)return;hbOn=true;
+  function beat(){beep(55,.09,.09,'sine');setTimeout(()=>beep(50,.07,.06,'sine'),130);}
   beat();setInterval(beat,1050);
 }
 
 document.addEventListener('click',()=>{try{getA().resume();startHeartbeat();}catch(e){}},{once:true});
+document.addEventListener('keydown',()=>{try{getA().resume();}catch(e){}},{once:true});
 
-// ── flash ──
+// ── SPEECH SYNTHESIS — funny meme sounds ──
+const funnyLines=[
+  // Pikachu / meme lines
+  {text:"Oh my god, it's Pikachu!",  rate:1.3, pitch:1.8},
+  {text:"Pika pika pika piiikaaaa!",  rate:1.5, pitch:2.0},
+  // horror announcements
+  {text:"Warning. Your computer has a virus.",  rate:0.75, pitch:0.5},
+  {text:"I can see you through your webcam.",   rate:0.8,  pitch:0.6},
+  {text:"Your files taste delicious.",           rate:0.7,  pitch:0.5},
+  {text:"Goodbye. Forever.",                     rate:0.6,  pitch:0.4},
+  {text:"Help. I am trapped inside your computer.", rate:0.85, pitch:0.55},
+  // funny
+  {text:"Get pranked, nerd.",                    rate:1.1,  pitch:1.0},
+  {text:"Your password is now my password.",     rate:1.0,  pitch:0.9},
+  {text:"Have you tried turning it off and on again?", rate:0.9, pitch:1.0},
+  {text:"This is fine.",                         rate:0.8,  pitch:0.8},
+  {text:"Beep boop. I am definitely not a virus. Beep boop.", rate:0.7, pitch:0.6},
+  {text:"Sending your photos to the internet right now.", rate:0.85, pitch:0.7},
+  {text:"Oh no! Anyway.",                        rate:1.1,  pitch:1.1},
+  {text:"Your data is being uploaded to the dark web.", rate:0.8, pitch:0.6},
+  {text:"Mwahahahaha.",                          rate:0.7,  pitch:0.5},
+  {text:"lol",                                   rate:1.4,  pitch:1.5},
+  {text:"Did you really think that button would help you?", rate:0.9, pitch:0.9},
+  {text:"There is no escape.",                   rate:0.65, pitch:0.4},
+  {text:"I have your credit card number. Mwahaha.", rate:0.8, pitch:0.5},
+];
+let speechIdx=Math.floor(Math.random()*funnyLines.length);
+let lastSpeech=Date.now()+20000; // wait 20s before first one
+
+function speak(text,rate=1,pitch=1){
+  try{
+    if(!window.speechSynthesis)return;
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.rate=rate;u.pitch=pitch;u.volume=1.0;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+function sayNext(){
+  const l=funnyLines[speechIdx++%funnyLines.length];
+  speak(l.text,l.rate,l.pitch);
+}
+
+// ── Flash ──
 const flashEl=document.getElementById('flash');
 function flash(c='#ff0000',ms=80){flashEl.style.background=c;flashEl.style.opacity='.65';setTimeout(()=>flashEl.style.opacity='0',ms);}
 
-// ── screen glitch ──
+// ── Glitch ──
 function triggerGlitch(){
-  const g=document.createElement('div');g.className='glitch-overlay';
-  document.body.appendChild(g);setTimeout(()=>g.remove(),600);
-  flash('#00ff0011',80);
+  const g=document.createElement('div');g.className='glitch-layer';
+  document.body.appendChild(g);setTimeout(()=>g.remove(),650);
 }
-setInterval(()=>{if(Math.random()<.7)triggerGlitch();},30000+Math.random()*15000);
+setInterval(()=>{if(Math.random()<.65)triggerGlitch();},32000+Math.random()*18000);
 
-// ── fullscreen ──
+// ── Fullscreen ──
 function goFullscreen(){document.getElementById('fs-block').style.display='none';document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{});}
 document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{}),400));
-document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement)document.getElementById('fs-block').style.display='flex';});
+let reFS=false;document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement){document.getElementById('fs-block').style.display='flex';if(!reFS){reFS=true;setTimeout(()=>{document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{});reFS=false;},400);}}});
 document.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('keydown',e=>{if(['F5','F11','Escape'].includes(e.key)||(e.ctrlKey&&['w','r','t','n','l','u'].includes(e.key.toLowerCase())))e.preventDefault();});
-let reFS=false;document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&!reFS){reFS=true;setTimeout(()=>{document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{});reFS=false;},400);}});
 
-// ── secret exit ──
+// ── Secret exit ──
 let sb='';
 document.addEventListener('keydown',e=>{sb+=e.key;if(sb.length>4)sb=sb.slice(-4);if(sb==='4308'){document.exitFullscreen&&document.exitFullscreen();window.close();}});
 
-// ── countdown 3 min ──
+// ── Countdown 3 min ──
 let secs=180,cdPaused=false;
 const timerEl=document.getElementById('ctimer'),topEl=document.getElementById('top-timer');
 let beepMs=3000,lastBeep=Date.now();
@@ -427,57 +428,61 @@ const cdInterval=setInterval(()=>{
   if(secs<=0){clearInterval(cdInterval);triggerWarned();return;}
   const m=String(Math.floor(secs/60)).padStart(2,'0'),s=String(secs%60).padStart(2,'0');
   timerEl.textContent=`${m}:${s}`;topEl.textContent=`⏱ Files deleted in: ${m}:${s}`;
-  if(secs===90){beepMs=1500;flash('#ff000033',60);}
-  if(secs===60){beepMs=800;timerEl.style.fontSize='90px';scream();}
-  if(secs===30){beepMs=400;timerEl.style.color='#ff2222';flash('#ff000066',100);}
-  if(secs<=10){beepMs=200;timerEl.style.fontSize='100px';flash('#ff000099',160);if(secs%2===0)scream();}
+  if(secs===120){speak('Warning. Your computer has a virus.',0.75,0.5);}
+  if(secs===90) {beepMs=1500;flash('#ff000033',60);}
+  if(secs===60) {beepMs=800;timerEl.style.fontSize='90px';scream();speak("Have you tried turning it off and on again?",0.9,1.0);}
+  if(secs===30) {beepMs=400;timerEl.style.color='#ff2222';flash('#ff000066',100);speak("There is no escape.",0.65,0.4);}
+  if(secs<=10)  {beepMs=200;timerEl.style.fontSize='100px';flash('#ff000099',160);if(secs%2===0)scream();}
+
+  // random funny speech every ~25-45s
+  if(Date.now()-lastSpeech>25000+Math.random()*20000){
+    sayNext();lastSpeech=Date.now();
+  }
 },1000);
 
-// ── live counters ──
+// ── Live counters ──
 setInterval(()=>{const e=document.getElementById('regcount');if(e)e.textContent=+e.textContent+Math.floor(Math.random()*4+1);},900);
 setInterval(()=>{const e=document.getElementById('sprcount');if(e&&+e.textContent<99)e.textContent=+e.textContent+1;},2400);
 let dmb=128;setInterval(()=>{dmb+=Math.floor(Math.random()*10+3);const e=document.getElementById('datamb');if(e)e.textContent=dmb;},1200);
-const tbMsgs=['⚠ WINDOWS SECURITY — CRITICAL THREAT ACTIVE','🔴 RANSOMWARE SPREADING — ACT NOW','⛔ DATA EXFILTRATION IN PROGRESS — 185.220.101.47','💀 SYSTEM INTEGRITY COMPROMISED','🔴 YOUR FILES ARE BEING STOLEN RIGHT NOW','📷 WEBCAM FEED TRANSMITTING TO REMOTE SERVER','🎙 MICROPHONE RECORDING — AUDIO BEING UPLOADED'];
+const tbMsgs=['⚠ WINDOWS SECURITY — CRITICAL THREAT ACTIVE','🔴 RANSOMWARE SPREADING — ACT NOW','⛔ DATA EXFILTRATION — 185.220.101.47','💀 SYSTEM INTEGRITY COMPROMISED','🔴 YOUR FILES ARE BEING STOLEN','📷 WEBCAM STREAMING TO HACKER','🎙 MICROPHONE RECORDING — UPLOADING...','🌍 LOCATION BROADCAST ACTIVE'];
 let tmi=0;setInterval(()=>{tmi=(tmi+1)%tbMsgs.length;document.getElementById('topbar-msg').textContent=tbMsgs[tmi];},3500);
 
-// ── encryption progress ──
+// ── Encryption progress ──
 let pct=0,fdone=0;const pfill=document.getElementById('pfill');
 setInterval(()=>{pct=Math.min(pct+Math.random()*.7,99.9);fdone+=Math.floor(Math.random()*4+1);pfill.style.width=pct.toFixed(1)+'%';document.getElementById('ppct').textContent=pct.toFixed(0)+'%';document.getElementById('fdone').textContent=fdone;},260);
 
-// ── file list ──
-const fnames=['Documents\\taxes_2024.xlsx','Documents\\passwords.txt','Pictures\\family_photos.zip','Desktop\\work_project.docx','Documents\\bank_statements.pdf','Desktop\\id_scan.jpg','Documents\\medical_records.pdf','AppData\\Chrome\\Login Data','Documents\\ssn_info.txt','Desktop\\crypto_wallet.dat','Documents\\contracts_2024.zip','Documents\\tax_returns_2022.pdf','Documents\\insurance_docs.pdf','Downloads\\private_photos.zip','AppData\\Roaming\\credentials','Desktop\\passport_scan.jpg','AppData\\Discord\\tokens','Documents\\credit_card_info.txt','Desktop\\recovery_codes.txt','Documents\\will_and_testament.pdf','Videos\\private_video.mp4','AppData\\Firefox\\logins.json'];
+// ── File list ──
+const fnames=['Documents\\taxes_2024.xlsx','Documents\\passwords.txt','Pictures\\family_photos.zip','Desktop\\work_project.docx','Documents\\bank_statements.pdf','Desktop\\id_scan.jpg','Documents\\medical_records.pdf','AppData\\Chrome\\Login Data','Documents\\ssn_info.txt','Desktop\\crypto_wallet.dat','Documents\\contracts_2024.zip','Documents\\tax_returns_2022.pdf','Downloads\\private_photos.zip','AppData\\Roaming\\credentials','Desktop\\passport_scan.jpg','AppData\\Discord\\tokens','Documents\\credit_card_info.txt','Desktop\\recovery_codes.txt','Videos\\private_video.mp4','AppData\\Firefox\\logins.json'];
 let fi=0;const fbox=document.getElementById('fitems');
 setInterval(()=>{const el=document.createElement('div');el.className='fitem';el.textContent='🔒 C:\\Users\\User\\'+fnames[fi++%fnames.length];fbox.prepend(el);document.getElementById('fcount').textContent=fi;while(fbox.children.length>5)fbox.removeChild(fbox.lastChild);},450);
 
-// ── activity log ──
-const logs=['[lsass.exe] injecting into svchost.exe PID 4812','[KERNEL] Page fault at 0xFFFFFA8003B2C000','[NET] Sending 4.1KB to 185.220.101.47:443','[REG] HKLM\\System\\CurrentControlSet modified','[DISK] Writing to MBR sector 0','[CRYPT] AES-256 key generated','[CAM] Webcam stream opened — uploading...','[MIC] Recording audio — 44100Hz stereo','[NET] Uploading screenshots to remote server','[CRYPT] Encrypting: Documents\\passwords.txt','[FIREWALL] Windows Defender terminated','[NET] Exfiltrating 47 saved passwords','[DISK] Volume shadow copies deleted','[SCREEN] Display buffer captured','[KEY] Keylogger active — 1,284 chars logged','[NET] Email sent to 127 contacts','[GPS] Location broadcast: accuracy ±5m','[PHONE] Linked device also compromised','[BANK] Login attempt: chase.com','[CRYPT] Encrypting: Desktop\\private_photos.zip','[NET] Discord token extracted','[NET] Google session hijacked'];
+// ── Activity log ──
+const logs=['[lsass.exe] injecting into svchost.exe PID 4812','[KERNEL] Page fault at 0xFFFFFA8003B2C000','[NET] Sending 4.1KB to 185.220.101.47:443','[REG] HKLM\\System\\CurrentControlSet modified','[DISK] Writing to MBR sector 0','[CAM] Webcam stream opened — uploading live...','[MIC] Recording audio 44100Hz stereo','[NET] Uploading screenshots to remote server','[CRYPT] Encrypting: Documents\\passwords.txt','[FIREWALL] Windows Defender terminated','[NET] Exfiltrating 47 saved passwords','[DISK] Volume shadow copies deleted','[SCREEN] Display buffer captured','[KEY] Keylogger active — 1,284 chars logged','[NET] Email sent to 127 contacts','[GPS] Location broadcast: ±5m accuracy','[PHONE] Linked device also compromised','[BANK] Login attempt: chase.com','[CRYPT] Encrypting: Desktop\\private_photos.zip','[NET] Discord token extracted','[NET] Google session hijacked'];
 let li=0;const lbox=document.getElementById('litems');
 setInterval(()=>{const el=document.createElement('div');el.className='litem';el.textContent=logs[li++%logs.length];lbox.prepend(el);while(lbox.children.length>5)lbox.removeChild(lbox.lastChild);},600);
 
-// ── floating error popups ──
+// ── Floating error popups ──
 const floatErrors=[
-  {title:'Microsoft Windows',       bar:'',       msg:'Windows has detected a hard disk problem.\nBack up files immediately.\nError: 0x00000024  NTFS_FILE_SYSTEM'},
-  {title:'Windows Defender',        bar:'red',    msg:'Threat: Ransom:Win32/Petya.A\nSeverity: SEVERE | Status: Active\nRegistry changes detected.'},
-  {title:'Drive Health Warning',    bar:'orange', msg:'SMART Failure — WDC WD10EZEX\nFailure imminent. Error: 0x800701E3'},
-  {title:'System — Critical',       bar:'red',    msg:'Stop: 0x0000007E (0xFFFFFFFFC0000005)\nntoskrnl.exe failed. Memory dump saved.'},
-  {title:'Windows Update',          bar:'',       msg:'Error 0x800f0900 — Update failed.\nChanges being reverted. Files may be lost.'},
-  {title:'Security Alert',          bar:'red',    msg:'Unauthorized access from 185.220.101.47\nFirewall breach: svchost.exe PID 4812'},
-  {title:'Webcam Access Detected',  bar:'dark',   msg:'⚠ Your webcam is being accessed.\n\nProcess: svchost.exe (PID 7821)\nStreaming live to: 185.220.101.47:4444',cam:true},
-  {title:'Password Export',         bar:'dark',   msg:'⚠ 47 saved passwords have been exported.\n\nGmail ✓  Bank ✓  Facebook ✓  PayPal ✓\nDestination: 185.220.101.47'},
-  {title:'Screen Recording',        bar:'dark',   msg:'Your screen is being recorded.\n\nProcess: svchost.exe — capturing every 3s\nUploading to remote C2 server.'},
-  {title:'Credit Card Detected',    bar:'red',    msg:'⚠ Payment info extracted from browser.\n\nCard: **** **** **** (detected)\nTransmitted to: 185.220.101.47:8443'},
-  {title:'Windows Activation',      bar:'',       msg:'Error 0xC004F074 — Not genuine.\nFiles will be deleted in 3 days.'},
-  {title:'Memory Diagnostic',       bar:'',       msg:'Corruption at 0xFFFFFA8003B2C000\nHardware failure imminent.'},
-  {title:'Microsoft Support',       bar:'dark',   msg:'⚠ CALL IMMEDIATELY: 1-800-642-7676\n\nDo NOT restart your computer.\nA technician must assist you NOW.'},
-  {title:'Location Services',       bar:'dark',   msg:'⚠ Your location is being tracked.\n\nCoordinates sent every 30 seconds.\nAccuracy: ±5 meters'},
-  {title:'Disk Error',              bar:'red',    msg:'winload.exe missing or corrupt.\nStatus: 0xc000000e — Boot recovery failed.'},
-  {title:'Event Viewer',            bar:'',       msg:'Bugcheck: 0x0000009f\nDump: C:\\Windows\\MEMORY.DMP\n47 critical events in last 60 seconds.'},
-  {title:'Email Breach',            bar:'red',    msg:'⚠ 372 emails sent to ALL your contacts.\n\nSubject: "Click here" with infected link.\nSent from: your account at 02:14 AM'},
-  {title:'Google Account',          bar:'red',    msg:'⚠ New sign-in to your Google Account.\n\nDevice: Unknown Windows PC\nLocation: Moscow, Russia\nTime: just now'},
-  {title:'iPhone Compromised',      bar:'dark',   msg:'Your linked iPhone has been compromised.\n\nMessages and photos are being mirrored.\nApple ID credentials exported.'},
-  {title:'Bank Alert',              bar:'red',    msg:'⚠ Suspicious login to your bank.\n\nIP: 185.220.101.47 (Russia)\nBalance accessed. Contact bank NOW.'},
-  {title:'Discord Token Stolen',    bar:'dark',   msg:'Your Discord token has been exported.\n\nThe attacker now has full access\nto your account and server list.'},
-  {title:'Keylogger Active',        bar:'red',    msg:'⚠ Every keystroke is being recorded.\n\n1,284 characters captured so far.\nIncluding passwords and personal info.'},
+  {title:'Microsoft Windows',      bar:'',      msg:'Windows has detected a hard disk problem.\nBack up files immediately.\nError: 0x00000024  NTFS_FILE_SYSTEM'},
+  {title:'Windows Defender',       bar:'red',   msg:'Threat: Ransom:Win32/Petya.A\nSeverity: SEVERE | Status: Active\nRegistry changes detected.'},
+  {title:'Drive Health Warning',   bar:'orange',msg:'SMART Failure — WDC WD10EZEX\nFailure imminent. Error: 0x800701E3'},
+  {title:'System — Critical',      bar:'red',   msg:'Stop: 0x0000007E (0xFFFFFFFFC0000005)\nntoskrnl.exe failed. Dump saved.'},
+  {title:'Windows Update',         bar:'',      msg:'Error 0x800f0900 — Update failed.\nChanges being reverted.'},
+  {title:'Security Alert',         bar:'red',   msg:'Unauthorized access from 185.220.101.47\nFirewall breach: svchost.exe PID 4812'},
+  {title:'Webcam Access Detected', bar:'dark',  msg:'⚠ Your webcam is streaming live.\n\nProcess: svchost.exe (PID 7821)\nDestination: 185.220.101.47:4444',cam:true},
+  {title:'Password Export',        bar:'dark',  msg:'⚠ 47 saved passwords exported.\n\nGmail ✓  Bank ✓  Facebook ✓  PayPal ✓\nDestination: 185.220.101.47'},
+  {title:'Screen Recording',       bar:'dark',  msg:'Your screen is being captured every 3s.\nUploading to remote C2 server.'},
+  {title:'Credit Card Detected',   bar:'red',   msg:'⚠ Payment info extracted from browser.\n\nCard: **** **** **** (detected)\nTransmitted to: 185.220.101.47:8443'},
+  {title:'Microsoft Support',      bar:'dark',  msg:'⚠ CALL IMMEDIATELY: 1-800-642-7676\n\nDo NOT restart. A technician MUST assist now.'},
+  {title:'Location Services',      bar:'dark',  msg:'⚠ Your location is being tracked.\n\nCoordinates sent every 30 seconds.\nAccuracy: ±5 meters'},
+  {title:'Email Breach',           bar:'red',   msg:'⚠ 372 emails sent to ALL your contacts.\n\nSubject: "Click here" — infected link.\nSent from your account at 02:14 AM'},
+  {title:'Google Account',         bar:'red',   msg:'⚠ New sign-in to your Google Account.\n\nDevice: Unknown Windows PC\nLocation: Moscow, Russia — just now'},
+  {title:'iPhone Compromised',     bar:'dark',  msg:'Your linked iPhone has been compromised.\n\nMessages and photos being mirrored.\nApple ID credentials exported.'},
+  {title:'Bank Alert',             bar:'red',   msg:'⚠ Suspicious login to your bank.\n\nIP: 185.220.101.47 (Russia)\nBalance accessed. Contact bank NOW.'},
+  {title:'Discord Token Stolen',   bar:'dark',  msg:'Your Discord token has been exported.\n\nFull access to your account and DMs.'},
+  {title:'Keylogger Active',       bar:'red',   msg:'⚠ Every keystroke is being recorded.\n\n1,284 characters captured including passwords.'},
+  {title:'Memory Diagnostic',      bar:'',      msg:'Corruption at 0xFFFFFA8003B2C000\nHardware failure imminent.'},
+  {title:'Event Viewer',           bar:'',      msg:'Bugcheck: 0x0000009f\nDump: C:\\Windows\\MEMORY.DMP\n47 critical events in last 60 seconds.'},
 ];
 
 let floatIdx=0;
@@ -485,13 +490,14 @@ function spawnFloat(){
   if(document.getElementById('bsod').style.display==='block')return;
   if(document.getElementById('warned').style.display==='flex')return;
   if(document.getElementById('jumpscare').style.display==='flex')return;
+  if(document.getElementById('restore-screen').style.display==='flex')return;
   const e=floatErrors[floatIdx++%floatErrors.length];
   const div=document.createElement('div');div.className='float-error';
   div.style.left=Math.floor(Math.random()*Math.max(80,innerWidth-400))+'px';
-  div.style.top =Math.floor(42+Math.random()*Math.max(60,innerHeight-180))+'px';
+  div.style.top =Math.floor(42+Math.random()*Math.max(60,innerHeight-200))+'px';
   div.style.zIndex=600+(floatIdx%300);
   const bc=e.bar?` ${e.bar}`:'';
-  const camHtml=e.cam?`<div class="cam-view"><div class="cam-rec">● REC</div><div class="cam-face"></div><div class="cam-ts" id="cam-ts">00:00:00</div></div>`:'';
+  const camHtml=e.cam?`<div class="cam-view"><div class="cam-rec">● REC</div><div class="cam-outline"></div><div class="cam-ts">00:00:00</div></div>`:'';
   div.innerHTML=`
     <div class="float-titlebar${bc}">
       <span>⊞ ${e.title}</span>
@@ -504,53 +510,97 @@ function spawnFloat(){
       <button class="float-btn red" onclick="this.closest('.float-error').remove();doReset();">⚠ Factory Reset</button>
     </div>`;
   document.body.appendChild(div);
-  // update fake cam timestamp
-  if(e.cam){const ts=div.querySelector('#cam-ts');if(ts){let s=0;const ci=setInterval(()=>{s++;ts.textContent=new Date(s*1000).toISOString().substr(11,8);},1000);setTimeout(()=>clearInterval(ci),12000);}}
-  setTimeout(()=>{div.remove();spawnFloat();spawnFloat();},11000+Math.random()*4000);
+  if(e.cam){
+    let s=0;const ts=div.querySelector('.cam-ts');
+    const ci=setInterval(()=>{if(!div.isConnected){clearInterval(ci);return;}s++;ts.textContent=new Date(s*1000).toISOString().substr(11,8);},1000);
+  }
+  setTimeout(()=>{div.remove();spawnFloat();spawnFloat();},10000+Math.random()*5000);
   setTimeout(spawnFloat,350+Math.random()*500);
 }
 for(let i=0;i<7;i++)setTimeout(spawnFloat,i*280);
 
-// ── modal ──
+// ── Modal ──
 function showModal(){document.getElementById('modal').style.display='flex';}
 
-// ── FREDDY JUMPSCARE (fires randomly at 60-110s into session) ──
-let jumpscaredOnce=false;
-function triggerJumpscare(){
-  if(jumpscaredOnce)return;
-  jumpscaredOnce=true;
+// ── RESTORE DATA flow → Freddy jumpscare ──
+function startRestore(){
   cdPaused=true;
   document.querySelectorAll('.float-error').forEach(e=>e.remove());
+  document.getElementById('modal').style.display='none';
+  document.getElementById('btn-restore').style.display='none';
+  const rs=document.getElementById('restore-screen');
+  rs.style.display='flex';
+
+  // say something hopeful while it "restores"
+  setTimeout(()=>speak("Restoring your files. Please wait.",0.85,0.9),1000);
+  setTimeout(()=>speak("Almost done. Your files are being recovered.",0.85,0.9),5000);
+
+  const bar=document.getElementById('restore-bar');
+  const msg=document.getElementById('restore-msg');
+  const sub=document.getElementById('restore-sub');
+  const steps=['Scanning file system...','Recovering Documents folder...','Recovering Pictures...','Restoring AppData...','Verifying file integrity...','Rebuilding registry...','Finalizing restoration...','✔  All files successfully restored!'];
+  let rp=0,rmi=0;
+  const ri=setInterval(()=>{
+    rp+=Math.random()*3.5+1.5;
+    if(rp>=100){rp=100;clearInterval(ri);}
+    bar.style.width=rp.toFixed(0)+'%';
+    const step=Math.floor(rp/(100/steps.length));
+    if(step<steps.length)msg.textContent=steps[step];
+  },130);
+
+  // after 9s — "all good!" pause, then FREDDY
+  setTimeout(()=>{
+    msg.textContent='✔  All files successfully restored!';
+    msg.style.color='#00ff88';
+    msg.style.fontSize='16px';
+    sub.textContent='Your computer is now safe. You may resume normal use.';
+    speak("Your files have been fully restored. Your computer is now safe.",0.85,0.95);
+  },9000);
+
+  // 10 seconds of false hope, then WHAM
+  setTimeout(()=>{
+    rs.style.display='none';
+    triggerJumpscare();
+  },19000);
+}
+
+// ── FREDDY JUMPSCARE ──
+function triggerJumpscare(){
   const js=document.getElementById('jumpscare');
   js.style.display='flex';
   fnafScreech();
-  // hold for 2.2s then back to chaos
+  // after screech settles, say something
+  setTimeout(()=>speak("Did you really think that would work? Mwahahaha.",0.75,0.45),1200);
+  // hold 2.5s then chaos resumes
   setTimeout(()=>{
     js.style.display='none';
+    document.getElementById('btn-restore').style.display='block';
     cdPaused=false;
-    beepMs=1200;
+    beepMs=1000;
     for(let i=0;i<12;i++)setTimeout(spawnFloat,i*130);
     scream();
-  },2200);
+    speak("Get pranked.",1.2,1.0);
+  },2500);
 }
-setTimeout(triggerJumpscare, 60000+Math.random()*50000);
 
-// ── I WARNED YOU (fires when countdown hits 0:00) ──
+// ── I WARNED YOU — fires when countdown hits 0:00 ──
 let wInt=null;
 function triggerWarned(){
   document.querySelectorAll('.float-error').forEach(e=>e.remove());
+  document.getElementById('btn-restore').style.display='none';
   const w=document.getElementById('warned');w.style.display='flex';
   megaScream();flash('#ff0000',600);
+  speak("I warned you. I warned you and you did not listen.",0.65,0.35);
   let wf=0,wr=0,wm=0;
   wInt=setInterval(()=>{
-    wf+=Math.floor(Math.random()*100+30);
-    wr+=Math.floor(Math.random()*30+8);
-    wm+=Math.floor(Math.random()*20+5);
+    wf+=Math.floor(Math.random()*110+40);
+    wr+=Math.floor(Math.random()*35+10);
+    wm+=Math.floor(Math.random()*22+6);
     document.getElementById('wf').textContent=wf.toLocaleString();
     document.getElementById('wr').textContent=wr.toLocaleString();
     document.getElementById('wm').textContent=wm.toLocaleString();
-  },300);
-  const sl=setInterval(()=>{scream();flash('#ff0000',90);},1600);
+  },280);
+  const sl=setInterval(()=>{scream();flash('#ff0000',80);},1500);
   document.getElementById('warned')._sl=sl;
 }
 
@@ -558,9 +608,11 @@ function continueFromWarned(){
   clearInterval(wInt);
   clearInterval(document.getElementById('warned')._sl);
   document.getElementById('warned').style.display='none';
+  document.getElementById('btn-restore').style.display='block';
   secs=60;timerEl.textContent='01:00';timerEl.style.fontSize='80px';
   cdPaused=false;
-  for(let i=0;i<10;i++)setTimeout(spawnFloat,i*160);
+  speak("Oh my god, it is Pikachu!",1.3,1.8);
+  for(let i=0;i<10;i++)setTimeout(spawnFloat,i*150);
 }
 
 // ── BSOD → GOT YOU ──
@@ -568,9 +620,11 @@ function doReset(){
   clearInterval(wInt);
   document.getElementById('modal').style.display='none';
   document.getElementById('warned').style.display='none';
+  document.getElementById('btn-restore').style.display='none';
   document.querySelectorAll('.float-error').forEach(e=>e.remove());
   const bsod=document.getElementById('bsod');bsod.style.display='block';
   megaScream();
+  speak("Your PC has crashed. This is not your fault. Just kidding, it totally is.",0.8,0.6);
   const pctEl=document.getElementById('bsod-pct');
   let p=0;
   const bi=setInterval(()=>{
@@ -582,20 +636,22 @@ function doReset(){
       document.getElementById('bsod-sad').style.display='none';
       document.getElementById('bsod-text').style.display='none';
       document.getElementById('bsod-code').style.display='none';
-      const gotcha=document.getElementById('bsod-gotcha');gotcha.style.display='block';
+      const g=document.getElementById('bsod-gotcha');g.style.display='block';
       beep(880,.1,.4,'sine');setTimeout(()=>beep(1100,.1,.4,'sine'),120);setTimeout(()=>beep(1320,.25,.4,'sine'),250);
+      speak("Got you! Mwahahaha. Get pranked.",1.1,1.0);
       setTimeout(()=>{
-        gotcha.style.display='none';
+        g.style.display='none';
         document.getElementById('bsod-sad').style.display='block';
         document.getElementById('bsod-text').style.display='block';
         document.getElementById('bsod-code').style.display='block';
         pctEl.textContent='0% complete';pctEl.style.display='block';
         bsod.style.display='none';
+        document.getElementById('btn-restore').style.display='block';
         secs=60;timerEl.textContent='01:00';timerEl.style.fontSize='80px';timerEl.style.color='#ff1111';
         cdPaused=false;p=0;
         for(let i=0;i<14;i++)setTimeout(spawnFloat,i*110);
         scream();
-      },3800);
+      },4000);
     }
   },150);
 }

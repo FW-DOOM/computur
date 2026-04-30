@@ -210,7 +210,21 @@ main { max-width: 1000px; margin: 0 auto; padding: 40px 20px 80px; }
   <h1>Computur</h1>
   <p class="tagline">Harmless prank pack — nothing is permanently changed</p>
   <span class="secret-tag">secret exit: type 4308 on any prank</span>
+
+  <!-- iPad banner -->
+  <div id="ipad-tip" style="display:none;margin-top:20px;background:#0a0a00;border:1px solid #443300;border-radius:4px;padding:14px 20px;max-width:540px;margin-left:auto;margin-right:auto;font-size:12px;color:#aa8844;line-height:2;text-align:left;">
+    <b style="color:#ffcc44;font-size:13px;">📱 iPad / iPhone fullscreen:</b><br>
+    1. Tap the <b style="color:#fff;">Share</b> button &nbsp;⬆️&nbsp; in Safari<br>
+    2. Tap <b style="color:#fff;">Add to Home Screen</b><br>
+    3. Open the app from your home screen — runs fullscreen with no browser UI
+  </div>
 </header>
+
+<script>
+if (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1)) {
+  document.getElementById('ipad-tip').style.display = 'block';
+}
+</script>
 
 <main>
 

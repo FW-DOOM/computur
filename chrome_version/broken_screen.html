@@ -5,93 +5,272 @@
 <title></title>
 <style>
 * { margin:0; padding:0; }
-html, body { width:100%; height:100%; background:#000; overflow:hidden; }
-canvas { display:block; }
+html, body { width:100%; height:100%; background:#000; overflow:hidden; cursor:none; }
+canvas { display:block; position:fixed; top:0; left:0; }
+#c1 { z-index:1; } /* base / shards */
+#c2 { z-index:2; } /* cracks + glow */
+#c3 { z-index:3; } /* flicker overlay */
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
+<canvas id="c1"></canvas>
+<canvas id="c2"></canvas>
+<canvas id="c3"></canvas>
+
 <script>
-const canvas = document.getElementById('c');
-const ctx    = canvas.getContext('2d');
-canvas.width  = window.innerWidth;
-canvas.height = window.innerHeight;
-const W = canvas.width, H = canvas.height;
+const W = window.innerWidth, H = window.innerHeight;
+['c1','c2','c3'].forEach(id => {
+  const c = document.getElementById(id);
+  c.width = W; c.height = H;
+});
+const base   = document.getElementById('c1').getContext('2d');
+const crack  = document.getElementById('c2').getContext('2d');
+const flick  = document.getElementById('c3').getContext('2d');
 
-// dark background
-ctx.fillStyle = '#0a0500';
-ctx.fillRect(0, 0, W, H);
-
-function rand(a, b) { return a + Math.random() * (b - a); }
-function randInt(a, b) { return Math.floor(rand(a, b)); }
-
-// ── crack lines ──
-function crack(x, y, length, angle, depth, thickness) {
-  if (depth === 0 || length < 3) return;
-  const rad = angle * Math.PI / 180;
-  const wx = rand(-4, 4), wy = rand(-4, 4);
-  const x2 = x + Math.cos(rad) * length + wx;
-  const y2 = y + Math.sin(rad) * length + wy;
-  const alpha = Math.min(1, depth / 6);
-  ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
-  ctx.lineWidth   = Math.max(0.5, thickness);
-  ctx.lineCap     = 'round';
-  ctx.beginPath();
-  ctx.moveTo(x, y);
-  ctx.lineTo(x2, y2);
-  ctx.stroke();
-  // main branch continues
-  crack(x2, y2, length * rand(0.55, 0.82), angle + rand(-15, 15), depth - 1, thickness - 0.35);
-  // side branches
-  const nb = depth > 3 ? randInt(0, 3) : randInt(0, 2);
-  for (let i = 0; i < nb; i++) {
-    crack(x2, y2, length * rand(0.3, 0.65), angle + rand(-70, 70), depth - 2, thickness - 0.7);
-  }
+// ── Audio ──
+let actx;
+function audio() {
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  return actx;
+}
+function tone(freq, type, vol, start, dur) {
+  const ctx = audio();
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.connect(g); g.connect(ctx.destination);
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(0, ctx.currentTime + start);
+  g.gain.linearRampToValueAtTime(vol, ctx.currentTime + start + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + start + dur);
+  o.start(ctx.currentTime + start);
+  o.stop(ctx.currentTime + start + dur + 0.05);
+}
+function crackSound() {
+  try {
+    audio();
+    // impact thud
+    tone(60,  'sine',    0.6,  0,    0.25);
+    tone(120, 'square',  0.3,  0,    0.15);
+    // glass crack bursts
+    for (let i = 0; i < 18; i++) {
+      const t = 0.05 + i * 0.07 + Math.random() * 0.04;
+      tone(1200 + Math.random()*2000, 'sawtooth', 0.08 + Math.random()*0.08, t, 0.04);
+    }
+    // low rumble
+    tone(40, 'sine', 0.25, 0, 1.2);
+  } catch(e) {}
 }
 
-function addImpact(ix, iy, arms, thickness) {
-  // rings
-  [randInt(10,22), randInt(26,45)].forEach((r, i) => {
-    ctx.strokeStyle = i === 0 ? 'rgba(255,255,255,0.9)' : 'rgba(180,180,180,0.5)';
-    ctx.lineWidth = i === 0 ? 2 : 1;
-    ctx.beginPath();
-    ctx.arc(ix, iy, r, 0, Math.PI * 2);
-    ctx.stroke();
-  });
-  for (let i = 0; i < arms; i++) {
-    const angle = (360 / arms) * i + rand(-10, 10);
-    crack(ix, iy, randInt(120, 320), angle, randInt(7, 10), thickness);
+// ── Helpers ──
+function r(a,b) { return a + Math.random()*(b-a); }
+function ri(a,b){ return Math.floor(r(a,b)); }
+
+// ── Crack data structures ──
+// Each segment: { x1,y1, x2,y2, t (0-1 when it appears), depth, gen }
+const segments = [];
+let maxT = 0;
+
+function buildCrack(x, y, len, angle, depth, gen, t) {
+  if (depth === 0 || len < 4) return;
+  const rad = angle * Math.PI / 180;
+  const wx = r(-3,3), wy = r(-3,3);
+  const x2 = x + Math.cos(rad)*len + wx;
+  const y2 = y + Math.sin(rad)*len + wy;
+  const endT = t + r(0.04, 0.09);
+  maxT = Math.max(maxT, endT);
+  segments.push({ x1:x, y1:y, x2, y2, t, endT, depth, gen });
+  // continue main branch
+  buildCrack(x2, y2, len*r(0.55,0.82), angle+r(-14,14), depth-1, gen, endT);
+  // side branches
+  const nb = depth > 3 ? ri(1,3) : ri(0,2);
+  for (let i=0; i<nb; i++) {
+    buildCrack(x2, y2, len*r(0.28,0.62), angle+r(-65,65), depth-2, gen, endT + r(0,0.05));
   }
 }
 
 // 3 impact points
 const impacts = [
-  [W * 0.28, H * 0.30],
-  [W * 0.55, H * 0.52],
-  [W * 0.74, H * 0.60],
+  { x: W*0.27, y: H*0.31, arms: ri(12,16), thick: r(2.5,4.0) },
+  { x: W*0.56, y: H*0.54, arms: ri(10,14), thick: r(2.0,3.2) },
+  { x: W*0.73, y: H*0.62, arms: ri(8,12),  thick: r(1.5,2.5) },
 ];
-impacts.forEach(([ix, iy]) => addImpact(ix, iy, randInt(10, 16), rand(2, 4)));
 
-// scattered glass dots
-for (let i = 0; i < 2000; i++) {
-  const px = rand(0, W), py = rand(0, H);
-  const r  = rand(0.5, 2.5);
-  const a  = rand(0.2, 0.8);
-  ctx.fillStyle = `rgba(255,255,255,${a})`;
-  ctx.beginPath();
-  ctx.arc(px, py, r, 0, Math.PI * 2);
-  ctx.fill();
+impacts.forEach((imp, gi) => {
+  for (let i=0; i<imp.arms; i++) {
+    const angle = (360/imp.arms)*i + r(-12,12);
+    buildCrack(imp.x, imp.y, ri(110,290), angle, ri(7,10), gi, gi*0.15 + r(0,0.04));
+  }
+});
+
+// sort by start time so we can slice
+segments.sort((a,b) => a.t - b.t);
+
+// ── Glass shards (pre-computed polygons) ──
+const shards = [];
+function makeShard(cx, cy) {
+  const n = ri(3,6);
+  const pts = [];
+  for (let i=0; i<n; i++) {
+    const a = (Math.PI*2/n)*i + r(-0.4,0.4);
+    const d = ri(20,120);
+    pts.push([cx + Math.cos(a)*d, cy + Math.sin(a)*d]);
+  }
+  const alpha = r(0.04, 0.22);
+  const hue   = Math.random() < 0.4 ? `rgba(160,200,255,${alpha})` : `rgba(0,0,0,${alpha*2})`;
+  shards.push({ pts, color: hue });
+}
+for (let i=0; i<180; i++) makeShard(r(0,W), r(0,H));
+
+// ── Draw base (dark bg + shards) ──
+function drawBase() {
+  base.fillStyle = '#08040a';
+  base.fillRect(0, 0, W, H);
+  shards.forEach(s => {
+    base.beginPath();
+    s.pts.forEach(([x,y],i) => i===0 ? base.moveTo(x,y) : base.lineTo(x,y));
+    base.closePath();
+    base.fillStyle = s.color;
+    base.fill();
+  });
+  // dead zones / dark blobs near impacts
+  impacts.forEach(imp => {
+    const gr = base.createRadialGradient(imp.x,imp.y,0, imp.x,imp.y,ri(120,220));
+    gr.addColorStop(0, 'rgba(0,0,0,0.7)');
+    gr.addColorStop(1, 'rgba(0,0,0,0)');
+    base.fillStyle = gr;
+    base.fillRect(0,0,W,H);
+  });
+  // scattered glass dots
+  for (let i=0; i<2400; i++) {
+    const px=r(0,W), py=r(0,H), rad=r(0.4,2.4);
+    const a=r(0.15,0.7);
+    base.fillStyle=`rgba(255,255,255,${a})`;
+    base.beginPath(); base.arc(px,py,rad,0,Math.PI*2); base.fill();
+  }
+}
+drawBase();
+
+// ── Draw impact rings ──
+function drawRings() {
+  impacts.forEach(imp => {
+    [[ri(8,18), 2, 0.9], [ri(22,38), 1, 0.55], [ri(40,60), 0.5, 0.25]].forEach(([rad,lw,alpha]) => {
+      crack.strokeStyle = `rgba(255,255,255,${alpha})`;
+      crack.lineWidth = lw;
+      crack.beginPath();
+      crack.arc(imp.x, imp.y, rad, 0, Math.PI*2);
+      crack.stroke();
+    });
+    // bright center dot
+    crack.fillStyle='rgba(255,255,255,0.95)';
+    crack.beginPath(); crack.arc(imp.x,imp.y,4,0,Math.PI*2); crack.fill();
+  });
 }
 
-// request fullscreen
+// ── Draw one segment with chromatic aberration + glow ──
+function drawSegment(seg, progress) {
+  const frac = Math.min(1, (progress - seg.t) / (seg.endT - seg.t));
+  if (frac <= 0) return;
+  const ex = seg.x1 + (seg.x2 - seg.x1)*frac;
+  const ey = seg.y1 + (seg.y2 - seg.y1)*frac;
+  const depthAlpha = Math.min(1, seg.depth/7);
+  const lw = Math.max(0.5, (seg.depth/8) * 2.5);
+
+  // glow (backlight bleed)
+  crack.strokeStyle = `rgba(150,210,255,${depthAlpha*0.18})`;
+  crack.lineWidth   = lw + 4;
+  crack.lineCap     = 'round';
+  crack.beginPath(); crack.moveTo(seg.x1, seg.y1); crack.lineTo(ex, ey); crack.stroke();
+
+  // chromatic aberration — red channel offset
+  crack.strokeStyle = `rgba(255,60,60,${depthAlpha*0.35})`;
+  crack.lineWidth   = lw;
+  crack.beginPath(); crack.moveTo(seg.x1+1.5, seg.y1+0.5); crack.lineTo(ex+1.5, ey+0.5); crack.stroke();
+
+  // blue channel offset
+  crack.strokeStyle = `rgba(60,120,255,${depthAlpha*0.35})`;
+  crack.beginPath(); crack.moveTo(seg.x1-1.5, seg.y1-0.5); crack.lineTo(ex-1.5, ey-0.5); crack.stroke();
+
+  // white core
+  crack.strokeStyle = `rgba(255,255,255,${depthAlpha*0.95})`;
+  crack.lineWidth   = Math.max(0.4, lw - 0.5);
+  crack.beginPath(); crack.moveTo(seg.x1, seg.y1); crack.lineTo(ex, ey); crack.stroke();
+}
+
+// ── Flicker ──
+let flickerPhase = 0;
+function drawFlicker(progress) {
+  flick.clearRect(0,0,W,H);
+  flickerPhase += 0.08;
+  if (progress < 0.15) {
+    // impact flash
+    const intensity = Math.max(0, 1 - progress/0.15) * 0.85;
+    flick.fillStyle = `rgba(255,255,255,${intensity})`;
+    flick.fillRect(0,0,W,H);
+  } else if (progress > 0.9) {
+    // settled — occasional subtle flicker
+    if (Math.random() < 0.015) {
+      flick.fillStyle = `rgba(255,255,255,${r(0.02,0.08)})`;
+      flick.fillRect(0,0,W,H);
+    }
+    // scanline drift
+    const lineY = (Math.sin(flickerPhase)*0.5+0.5)*H;
+    flick.fillStyle = 'rgba(255,255,255,0.025)';
+    flick.fillRect(0, lineY, W, 2);
+  }
+}
+
+// ── Animation loop ──
+const ANIM_DURATION = 1600; // ms for cracks to finish spreading
+let startTime = null;
+let soundFired = false;
+
+function animate(ts) {
+  if (!startTime) startTime = ts;
+  const elapsed = ts - startTime;
+  const progress = Math.min(elapsed / ANIM_DURATION, 1);
+
+  // fire sound on first frame
+  if (!soundFired) { soundFired=true; crackSound(); }
+
+  // redraw cracks each frame during animation
+  if (progress < 1) {
+    crack.clearRect(0,0,W,H);
+    segments.forEach(seg => drawSegment(seg, progress * maxT));
+    drawRings();
+  } else if (progress === 1 || (elapsed < ANIM_DURATION + 50)) {
+    // draw final full state once
+    crack.clearRect(0,0,W,H);
+    segments.forEach(seg => drawSegment(seg, maxT + 1));
+    drawRings();
+  }
+
+  drawFlicker(progress);
+  requestAnimationFrame(animate);
+}
+
+// kick off on first click/tap (needed for audio)
+function start() {
+  document.removeEventListener('click', start);
+  document.removeEventListener('touchstart', start);
+  requestAnimationFrame(animate);
+}
+document.addEventListener('click', start);
+document.addEventListener('touchstart', start);
+
+// also start automatically after 300ms (audio may not play without interaction)
+setTimeout(() => requestAnimationFrame(animate), 300);
+
+// fullscreen
 document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(()=>{});
 document.addEventListener('contextmenu', e => e.preventDefault());
-
-// secret exit: type 4308
-let buf = '';
 document.addEventListener('keydown', e => {
-  buf += e.key; if (buf.length > 4) buf = buf.slice(-4);
-  if (buf === '4308') { document.exitFullscreen && document.exitFullscreen(); window.close(); }
+  if (['F5','F11'].includes(e.key) || (e.ctrlKey && ['w','r'].includes(e.key.toLowerCase()))) e.preventDefault();
+});
+
+// secret exit: 4308
+let buf='';
+document.addEventListener('keydown', e => {
+  buf += e.key; if (buf.length>4) buf=buf.slice(-4);
+  if (buf==='4308') { document.exitFullscreen && document.exitFullscreen(); window.close(); }
 });
 </script>
 </body>

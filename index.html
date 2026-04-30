@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Computur Prank Pack</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Oswald:wght@700&display=swap');
+
+:root {
+  --red:    #ff2222;
+  --dkred:  #880000;
+  --bg:     #080808;
+  --panel:  #100808;
+  --border: #2a0000;
+  --text:   #ffcccc;
+  --dim:    #664444;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html, body {
+  min-height:100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  overflow-x: hidden;
+}
+
+/* ── scanline overlay ── */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0.10) 0px,
+    rgba(0,0,0,0.10) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  pointer-events:none;
+  z-index:9999;
+}
+
+/* ── header ── */
+header {
+  text-align:center;
+  padding: 52px 20px 36px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+header::after {
+  content:'';
+  display:block;
+  height:2px;
+  background: linear-gradient(90deg, transparent, var(--red), transparent);
+  margin-top:36px;
+}
+
+.skull { font-size: 52px; display:block; margin-bottom:10px; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+h1 {
+  font-family:'Oswald',sans-serif;
+  font-size: clamp(36px, 8vw, 80px);
+  letter-spacing: 6px;
+  color: var(--red);
+  text-transform: uppercase;
+  text-shadow: 0 0 30px #ff000066, 0 0 60px #ff000033;
+  animation: flicker 6s infinite;
+}
+@keyframes flicker {
+  0%,19%,21%,23%,100% { opacity:1 }
+  20%,22% { opacity:0.4 }
+}
+
+.tagline {
+  margin-top:12px;
+  font-size:13px;
+  color: var(--dim);
+  letter-spacing:3px;
+  text-transform:uppercase;
+}
+
+.secret-tag {
+  display:inline-block;
+  margin-top:18px;
+  font-size:11px;
+  color:#333;
+  background:#111;
+  border:1px solid #1a0000;
+  padding:4px 14px;
+  border-radius:2px;
+  letter-spacing:2px;
+}
+
+/* ── section ── */
+main { max-width: 1000px; margin: 0 auto; padding: 40px 20px 80px; }
+
+.section-title {
+  font-family:'Oswald',sans-serif;
+  font-size:13px;
+  letter-spacing:4px;
+  text-transform:uppercase;
+  color: var(--dim);
+  margin-bottom:20px;
+  padding-bottom:8px;
+  border-bottom:1px solid var(--border);
+}
+.section-title span { color: var(--red); }
+
+/* ── prank grid ── */
+.grid {
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 16px;
+  margin-bottom:50px;
+}
+
+/* ── prank card ── */
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--dkred);
+  border-radius:3px;
+  padding: 22px 20px 18px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  transition: border-top-color 0.15s, box-shadow 0.15s;
+  position:relative;
+  overflow:hidden;
+}
+.card::before {
+  content:'';
+  position:absolute; top:0; left:0; right:0; height:40px;
+  background: linear-gradient(180deg, rgba(255,0,0,0.04), transparent);
+  pointer-events:none;
+}
+.card:hover {
+  border-top-color: var(--red);
+  box-shadow: 0 0 24px rgba(255,0,0,0.15);
+}
+
+.card-icon  { font-size:32px; line-height:1; }
+.card-name  { font-family:'Oswald',sans-serif; font-size:20px; letter-spacing:1px; color:#fff; }
+.card-desc  { font-size:11px; color:var(--dim); line-height:1.7; flex:1; }
+.card-badge {
+  display:inline-block;
+  font-size:9px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  padding:2px 8px;
+  border-radius:2px;
+  width:fit-content;
+}
+.badge-web   { background:#001a00; color:#44ff44; border:1px solid #004400; }
+.badge-win   { background:#00001a; color:#4488ff; border:1px solid #000044; }
+.badge-ext   { background:#1a1000; color:#ffaa00; border:1px solid #443000; }
+
+.card-launch {
+  display:block;
+  text-align:center;
+  padding:11px;
+  background: var(--dkred);
+  color:#fff;
+  font-family:'Oswald',sans-serif;
+  font-size:14px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  text-decoration:none;
+  border-radius:2px;
+  transition: background 0.15s, box-shadow 0.15s;
+  animation: btn-breathe 2s infinite;
+}
+.card-launch:hover {
+  background: var(--red);
+  box-shadow: 0 0 16px rgba(255,0,0,0.5);
+  animation:none;
+}
+@keyframes btn-breathe {
+  0%,100%{background:var(--dkred)} 50%{background:#aa0000}
+}
+
+.card-launch.disabled {
+  background:#1a1a1a;
+  color:#444;
+  cursor:default;
+  animation:none;
+  font-size:11px;
+}
+.card-launch.disabled:hover { background:#1a1a1a; box-shadow:none; }
+
+/* ── stop code footer ── */
+.stop-code {
+  text-align:center;
+  padding:20px;
+  border-top:1px solid var(--border);
+  font-size:11px;
+  color:#333;
+  letter-spacing:2px;
+}
+.stop-code b { color:#553333; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="skull">💀</span>
+  <h1>Computur</h1>
+  <p class="tagline">Harmless prank pack — nothing is permanently changed</p>
+  <span class="secret-tag">secret exit: type 4308 on any prank</span>
+</header>
+
+<main>
+
+  <!-- WEB / CHROMEBOOK -->
+  <p class="section-title">🌐 &nbsp;<span>Web Pranks</span> &nbsp;— works on Chromebook, phone, anything with Chrome</p>
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-icon">☣️</div>
+      <div class="card-name">Virus Alert</div>
+      <span class="card-badge badge-web">Works everywhere</span>
+      <div class="card-desc">
+        Full Windows Security takeover. 5-minute countdown to file encryption,
+        live activity log, registry counter ticking up, escalating alarms.
+        When time runs out: "I WARNED YOU" red screen. Only escape: Factory Reset.
+      </div>
+      <a class="card-launch" href="chrome_version/virus.html" target="_blank">⚠ &nbsp; LAUNCH</a>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">💥</div>
+      <div class="card-name">Broken Screen</div>
+      <span class="card-badge badge-web">Works everywhere</span>
+      <div class="card-desc">
+        Animated cracks spread from 3 impact points with glass cracking sound,
+        chromatic aberration (red/blue color fringing), backlight bleed,
+        impact flash and subtle screen flicker once settled.
+      </div>
+      <a class="card-launch" href="chrome_version/broken_screen.html" target="_blank">💥 &nbsp; LAUNCH</a>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">🔄</div>
+      <div class="card-name">Fake Update</div>
+      <span class="card-badge badge-web">Works everywhere</span>
+      <div class="card-desc">
+        Fullscreen fake Windows Update screen frozen at 3% forever.
+        Rotating status messages, animated loading dots.
+        Looks exactly like a real Windows update stall.
+      </div>
+      <a class="card-launch" href="chrome_version/fake_update.html" target="_blank">🔄 &nbsp; LAUNCH</a>
+    </div>
+
+  </div>
+
+  <!-- CHROME EXTENSION -->
+  <p class="section-title">🔌 &nbsp;<span>Chrome Extension</span> &nbsp;— popups spawn as real OS windows outside the browser</p>
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-icon">🪟</div>
+      <div class="card-name">Error Storm</div>
+      <span class="card-badge badge-ext">Chrome Extension</span>
+      <div class="card-desc">
+        Spawns real Windows-style error dialogs as separate Chrome windows
+        scattered all over the screen — outside the browser.
+        Countdown, BSOD, Factory Reset button. Install the extension first.
+      </div>
+      <a class="card-launch disabled" href="#ext-install">📦 &nbsp; See install steps below</a>
+    </div>
+
+  </div>
+
+  <!-- install steps -->
+  <p class="section-title" id="ext-install">⚙️ &nbsp;<span>Extension Install Steps</span></p>
+  <div style="background:var(--panel);border:1px solid var(--border);border-radius:3px;padding:24px 28px;margin-bottom:50px;font-size:12px;line-height:2.2;color:var(--dim);">
+    1. Download or clone this repo &nbsp;→&nbsp;
+    <a href="https://github.com/FW-DOOM/computur/archive/refs/heads/master.zip"
+       style="color:var(--red);text-decoration:none;">
+      📦 Download ZIP
+    </a><br>
+    2. Unzip it, then open Chrome and go to &nbsp;<code style="background:#1a0000;padding:1px 6px;border-radius:2px;color:#ff8888;">chrome://extensions</code><br>
+    3. Turn on <b style="color:#fff;">Developer mode</b> (toggle top-right)<br>
+    4. Click <b style="color:#fff;">Load unpacked</b> → select the <code style="background:#1a0000;padding:1px 6px;border-radius:2px;color:#ff8888;">chrome_version/extension</code> folder<br>
+    5. Click the extension icon in Chrome toolbar → <b style="color:#fff;">Launch Security Alert</b>
+  </div>
+
+  <!-- WINDOWS ONLY -->
+  <p class="section-title">🖥️ &nbsp;<span>Windows Only</span> &nbsp;— requires Python 3</p>
+  <div class="grid">
+
+    <div class="card">
+      <div class="card-icon">🐍</div>
+      <div class="card-name">Error Storm .exe</div>
+      <span class="card-badge badge-win">Windows only</span>
+      <div class="card-desc">
+        <code>error_storm.py</code> — same as the extension but as a native Windows app.
+        25 popups/sec, countdown, I WARNED YOU screen, fake BSOD.
+      </div>
+      <a class="card-launch disabled" href="https://github.com/FW-DOOM/computur">📂 &nbsp; Get from GitHub</a>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">🖱️</div>
+      <div class="card-name">Mouse Chaos</div>
+      <span class="card-badge badge-win">Windows only</span>
+      <div class="card-desc">
+        <code>mouse_chaos.py</code> — teleports the mouse randomly, spins it in circles,
+        shakes it violently, zigzags across the screen. Cycles modes every 4 seconds.
+      </div>
+      <a class="card-launch disabled" href="https://github.com/FW-DOOM/computur">📂 &nbsp; Get from GitHub</a>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">🦠</div>
+      <div class="card-name">Virus Prank</div>
+      <span class="card-badge badge-win">Windows only</span>
+      <div class="card-desc">
+        <code>virus_prank.py</code> — one-button Windows Security popup.
+        Button reads "I'm stupid help me." Clicking unleashes bouncing meme windows
+        and hundreds of error popups simultaneously.
+      </div>
+      <a class="card-launch disabled" href="https://github.com/FW-DOOM/computur">📂 &nbsp; Get from GitHub</a>
+    </div>
+
+  </div>
+
+</main>
+
+<div class="stop-code">
+  secret exit code on all pranks: &nbsp;<b>4308</b> &nbsp;— &nbsp;
+  <a href="https://github.com/FW-DOOM/computur" style="color:#553333;text-decoration:none;">github.com/FW-DOOM/computur</a>
+</div>
+
+</body>
+</html>

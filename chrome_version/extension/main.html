@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Windows Security Alert</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas,monospace;overflow:hidden;color:#fff;user-select:none;}
+#flash{position:fixed;inset:0;pointer-events:none;z-index:8000;opacity:0;background:#ff0000;transition:opacity 0.05s;}
+#topbar{position:fixed;top:0;left:0;right:0;background:#cc0000;padding:7px 20px;font-size:13px;font-weight:bold;display:flex;justify-content:space-between;align-items:center;z-index:200;animation:pbar 0.6s infinite;}
+@keyframes pbar{0%,100%{background:#aa0000}50%{background:#ff0000}}
+#main{width:100%;height:100%;background:radial-gradient(ellipse at center,#0d0005 0%,#000 80%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:38px;}
+#cbox{background:#1a0000;border:2px solid #ff0000;border-radius:8px;padding:14px 40px;text-align:center;margin-bottom:16px;animation:glow 1s infinite;}
+@keyframes glow{0%,100%{box-shadow:0 0 30px #ff000099}50%{box-shadow:0 0 70px #ff0000ee}}
+#clabel{font-size:12px;color:#ff7777;letter-spacing:3px;text-transform:uppercase;}
+#ctimer{font-size:80px;font-weight:bold;color:#ff1111;font-family:Consolas;letter-spacing:8px;line-height:1;}
+#csub{font-size:11px;color:#ff5555;margin-top:4px;}
+#threat{background:#0d0d0d;border:1px solid #330000;border-left:5px solid #ff0000;border-radius:3px;padding:14px 22px;max-width:780px;width:92%;margin-bottom:12px;}
+#ttitle{font-size:15px;font-weight:bold;color:#ff2222;margin-bottom:8px;}
+.tr{display:flex;gap:12px;margin:3px 0;font-size:11px;}
+.tk{color:#666;width:150px;flex-shrink:0;}
+.tv{color:#ffaaaa;}.tv.r{color:#ff3333;font-weight:bold;}.tv.o{color:#ff7700;}
+#panels{display:flex;gap:12px;max-width:780px;width:92%;margin-bottom:12px;}
+.panel{flex:1;background:#080008;border:1px solid #330033;border-radius:3px;padding:10px 14px;font-size:10px;max-height:90px;overflow:hidden;}
+.ptitle{color:#ff3333;font-size:11px;font-weight:bold;margin-bottom:5px;}
+.fitem{color:#cc5555;margin:1px 0;animation:fi 0.2s;}
+.litem{color:#44ff44;margin:1px 0;font-family:Consolas;animation:fi 0.2s;}
+@keyframes fi{from{opacity:0;transform:translateX(-6px)}to{opacity:1}}
+#prog{max-width:780px;width:92%;margin-bottom:14px;}
+#plabel{font-size:11px;color:#777;margin-bottom:4px;}
+#pbg{background:#1a0000;border:1px solid #440000;border-radius:2px;height:15px;overflow:hidden;}
+#pfill{height:100%;background:linear-gradient(90deg,#660000,#cc2200,#ff5500);width:0%;transition:width 0.3s;}
+#btnreset{background:#cc0000;color:#fff;border:none;padding:18px 56px;font-size:16px;font-weight:bold;border-radius:4px;cursor:pointer;letter-spacing:1px;animation:bp 0.5s infinite;text-transform:uppercase;}
+@keyframes bp{0%,100%{background:#cc0000;transform:scale(1)}50%{background:#ff0000;transform:scale(1.04);box-shadow:0 0 30px #ff0000bb}}
+#hint{font-size:10px;color:#0d0d0d;margin-top:6px;}
+
+/* factory reset modal */
+#modal{display:none;position:fixed;inset:0;background:#000000cc;z-index:9000;align-items:center;justify-content:center;}
+#mbox{background:#0d0d0d;border:1px solid #440000;border-top:6px solid #cc0000;width:520px;padding:24px 30px;border-radius:4px;}
+#mbox h2{color:#ff3333;font-size:15px;margin-bottom:10px;}
+#mbox p{color:#ffaaaa;font-size:11px;line-height:1.7;margin-bottom:16px;text-align:center;}
+#mbtn{width:100%;padding:16px;background:#cc0000;color:#fff;border:none;font-size:14px;font-weight:bold;cursor:pointer;border-radius:3px;animation:bp 0.5s infinite;}
+#mclose{font-size:10px;color:#333;margin-top:8px;display:block;text-align:center;}
+</style>
+</head>
+<body>
+<div id="flash"></div>
+<div id="topbar">
+  <span>⚠ WINDOWS SECURITY — CRITICAL THREAT ACTIVE — IMMEDIATE ACTION REQUIRED</span>
+  <span id="ttop" style="font-family:Consolas">⏱ Files deleted in: 05:00</span>
+</div>
+
+<div id="main">
+  <div id="cbox">
+    <div id="clabel">⚠ &nbsp; FILE ENCRYPTION BEGINS IN &nbsp; ⚠</div>
+    <div id="ctimer">05:00</div>
+    <div id="csub">All personal files will be permanently encrypted — ransom demand incoming</div>
+  </div>
+
+  <div id="threat">
+    <div id="ttitle">⛔ &nbsp; ACTIVE THREAT DETECTED ON THIS DEVICE</div>
+    <div class="tr"><span class="tk">Threat name:</span><span class="tv r">Ransom:Win32/Petya.A &nbsp;+&nbsp; Trojan:Win32/Wacatac.H!ml</span></div>
+    <div class="tr"><span class="tk">Severity:</span><span class="tv r">████████████ CRITICAL</span></div>
+    <div class="tr"><span class="tk">Status:</span><span class="tv r">SPREADING — <span id="sprcount">3</span> system processes infected</span></div>
+    <div class="tr"><span class="tk">Affected:</span><span class="tv">C:\Windows\System32\lsass.exe &nbsp;+&nbsp; ntoskrnl.exe</span></div>
+    <div class="tr"><span class="tk">Registry changes:</span><span class="tv r">YES — <span id="regcount">47</span> keys modified &amp; growing</span></div>
+    <div class="tr"><span class="tk">Network leak:</span><span class="tv r">ACTIVE — transmitting to 185.220.101.47</span></div>
+    <div class="tr"><span class="tk">Data at risk:</span><span class="tv o"><span id="datamb">128</span> MB of personal files identified</span></div>
+    <div class="tr"><span class="tk">Error codes:</span><span class="tv">0xC004F074 · 0x0000007E · 0x800701E3 · 0xFFFF9F04</span></div>
+  </div>
+
+  <div id="panels">
+    <div class="panel">
+      <div class="ptitle">🔒 ENCRYPTING — <span id="fcount">0</span> FILES</div>
+      <div id="fitems"></div>
+    </div>
+    <div class="panel">
+      <div class="ptitle">▶ SYSTEM ACTIVITY LOG</div>
+      <div id="litems"></div>
+    </div>
+  </div>
+
+  <div id="prog">
+    <div id="plabel">Encryption progress · <span id="ppct">0%</span> · <span id="fdone">0</span> files encrypted</div>
+    <div id="pbg"><div id="pfill"></div></div>
+  </div>
+
+  <button id="btnreset" onclick="showModal()">⚠ &nbsp;&nbsp; FACTORY RESET &nbsp;—&nbsp; ONLY SAFE OPTION &nbsp;&nbsp; ⚠</button>
+  <div id="hint">type 4308 to exit</div>
+</div>
+
+<!-- Factory reset modal -->
+<div id="modal">
+  <div id="mbox">
+    <h2>⚠ SYSTEM CANNOT BE RECOVERED</h2>
+    <p>Critical system processes have failed.<br>Your personal files and Windows installation are at risk.<br><br>The ONLY safe option is a Factory Reset to prevent<br>permanent data loss and hardware damage.</p>
+    <button id="mbtn" onclick="doReset()">⚠ &nbsp; FACTORY RESET — Recommended &nbsp; ⚠</button>
+    <span id="mclose" onclick="document.getElementById('modal').style.display='none'">cancel (not recommended)</span>
+  </div>
+</div>
+
+<script>
+// ── audio ──
+let actx=null;
+function getA(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();return actx;}
+function beep(f,d,v=0.15,t='square'){try{const c=getA(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;o.type=t;g.gain.setValueAtTime(v,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+d);o.start();o.stop(c.currentTime+d);}catch(e){}}
+function alarm(){beep(1200,0.08,0.2);setTimeout(()=>beep(800,0.08,0.2),120);setTimeout(()=>beep(1200,0.08,0.2),240);}
+function scream(){[300,480,620,800,950,1100,800,500].forEach((f,i)=>setTimeout(()=>beep(f,0.18,0.25,'sawtooth'),i*60));}
+document.addEventListener('click',()=>{try{getA().resume();}catch(e){}},{once:true});
+
+// ── flash ──
+const flashEl=document.getElementById('flash');
+function flash(ms=80){flashEl.style.opacity='0.55';setTimeout(()=>flashEl.style.opacity='0',ms);}
+
+// ── start chaos ──
+chrome.runtime.sendMessage({type:'START_CHAOS'});
+
+// ── listen for factory reset request from error popups ──
+chrome.runtime.onMessage.addListener(msg=>{
+  if(msg.type==='SHOW_FACTORY_RESET') showModal();
+});
+
+// ── countdown ──
+let secs=300;
+const timerEl=document.getElementById('ctimer');
+const topEl=document.getElementById('ttop');
+let beepMs=2500,lastBeep=Date.now();
+setInterval(()=>{if(Date.now()-lastBeep>=beepMs){alarm();lastBeep=Date.now();}},100);
+
+const cd=setInterval(()=>{
+  secs--;
+  if(secs<=0){clearInterval(cd);triggerWarned();return;}
+  const m=String(Math.floor(secs/60)).padStart(2,'0');
+  const s=String(secs%60).padStart(2,'0');
+  timerEl.textContent=`${m}:${s}`;
+  topEl.textContent=`⏱ Files deleted in: ${m}:${s}`;
+  if(secs===120){beepMs=1800;flash(60);}
+  if(secs===60){beepMs=900;timerEl.style.fontSize='90px';scream();}
+  if(secs===30){beepMs=500;timerEl.style.color='#ff0000';flash(100);}
+  if(secs<=10){beepMs=220;timerEl.style.fontSize='100px';flash(160);if(secs%2===0)scream();}
+},1000);
+
+// ── live counters ──
+setInterval(()=>{const e=document.getElementById('regcount');if(e)e.textContent=+e.textContent+Math.floor(Math.random()*3+1);},1100);
+setInterval(()=>{const e=document.getElementById('sprcount');if(e&&+e.textContent<47)e.textContent=+e.textContent+1;},2800);
+let dmb=128;setInterval(()=>{dmb+=Math.floor(Math.random()*8+2);const e=document.getElementById('datamb');if(e)e.textContent=dmb;},1400);
+
+// ── encryption progress ──
+let pct=0,fdone=0;
+const pfill=document.getElementById('pfill');
+setInterval(()=>{
+  pct=Math.min(pct+Math.random()*0.6,99.9);
+  fdone+=Math.floor(Math.random()*3);
+  pfill.style.width=pct.toFixed(1)+'%';
+  document.getElementById('ppct').textContent=pct.toFixed(0)+'%';
+  document.getElementById('fdone').textContent=fdone;
+},280);
+
+// ── file list ──
+const files=['Documents\\taxes_2024.xlsx','Documents\\passwords.txt','Pictures\\family_photos.zip','Desktop\\work_project.docx','Documents\\bank_statements.pdf','Desktop\\id_scan.jpg','Documents\\medical_records.pdf','AppData\\Chrome\\Login Data','Documents\\ssn_info.txt','Desktop\\crypto_wallet.dat','Documents\\contracts_2024.zip','Documents\\tax_returns_2022.pdf','Documents\\insurance_docs.pdf','Downloads\\private_photos.zip','AppData\\Roaming\\credentials','Desktop\\passport_scan.jpg','AppData\\Discord\\tokens','Documents\\credit_card_info.txt'];
+let fi=0;const fbox=document.getElementById('fitems');
+setInterval(()=>{
+  const el=document.createElement('div');el.className='fitem';
+  el.textContent='🔒 C:\\Users\\User\\'+files[fi++%files.length];
+  fbox.prepend(el);document.getElementById('fcount').textContent=fi;
+  while(fbox.children.length>5)fbox.removeChild(fbox.lastChild);
+},480);
+
+// ── log ──
+const logs=['[lsass.exe] injecting into svchost.exe PID 4812','[KERNEL] Page fault at 0xFFFFFA8003B2C000','[NET] Sending 2.4KB to 185.220.101.47:443','[REG] HKLM\\System\\CurrentControlSet modified','[DISK] Writing to MBR sector 0','[CRYPT] AES-256 key generated','[lsass.exe] dumping NTLM hashes','[NET] DNS query intercepted','[BOOT] Modifying BCD store','[CRYPT] Encrypting: Documents\\passwords.txt','[FIREWALL] Disabling Windows Defender','[REG] Run key persistence established','[NET] Exfiltrating Chrome passwords','[DISK] Shadow copies deleted','[NET] C2 beacon sent — awaiting commands'];
+let li=0;const lbox=document.getElementById('litems');
+setInterval(()=>{
+  const el=document.createElement('div');el.className='litem';
+  el.textContent=logs[li++%logs.length];
+  lbox.prepend(el);while(lbox.children.length>5)lbox.removeChild(lbox.lastChild);
+},650);
+
+// ── modal ──
+function showModal(){document.getElementById('modal').style.display='flex';}
+function doReset(){
+  chrome.runtime.sendMessage({type:'STOP_CHAOS'});
+  location.href=chrome.runtime.getURL('bsod.html');
+}
+
+// ── warned ──
+function triggerWarned(){
+  chrome.runtime.sendMessage({type:'STOP_CHAOS'});
+  chrome.runtime.sendMessage({type:'SHOW_WARNED'});
+  window.close();
+}
+
+// ── secret exit ──
+let buf='';
+document.addEventListener('keydown',e=>{
+  buf+=e.key;if(buf.length>4)buf=buf.slice(-4);
+  if(buf==='4308'){chrome.runtime.sendMessage({type:'STOP_CHAOS'});window.close();}
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin:0;padding:0;box-sizing:border-box; }
+body {
+  background:#f0f0f0;
+  font-family:'Segoe UI',sans-serif;
+  overflow:hidden;
+  user-select:none;
+}
+#titlebar {
+  background:#0078d7;color:#fff;
+  font-size:12px;font-weight:bold;
+  padding:5px 10px;
+  display:flex;justify-content:space-between;align-items:center;
+}
+#body { padding:12px 14px;display:flex;gap:12px;align-items:flex-start; }
+#icon { font-size:32px;flex-shrink:0;margin-top:2px; }
+#msg  { font-size:11px;color:#111;line-height:1.5;white-space:pre-line; }
+#btns { padding:8px 14px;display:flex;gap:8px;border-top:1px solid #ccc; }
+.btn {
+  padding:4px 18px;font-size:11px;cursor:pointer;
+  border:1px solid #999;border-radius:2px;background:#e1e1e1;color:#222;
+}
+.btn:hover { background:#d0d0d0; }
+.btn.red { background:#cc0000;color:#fff;border-color:#aa0000;font-weight:bold; }
+.btn.red:hover { background:#ff0000; }
+</style>
+</head>
+<body>
+<div id="titlebar">
+  <span id="title-text">Windows</span>
+  <span style="cursor:pointer;font-size:13px" id="x-btn">✕</span>
+</div>
+<div id="body">
+  <div id="icon">⛔</div>
+  <div id="msg"></div>
+</div>
+<div id="btns">
+  <button class="btn" id="ok-btn">OK</button>
+  <button class="btn red" id="reset-btn">⚠ FACTORY RESET</button>
+</div>
+<script>
+const params = new URLSearchParams(location.search);
+document.getElementById('title-text').textContent = params.get('title') || 'Windows';
+document.getElementById('msg').textContent = params.get('msg') || 'An error occurred.';
+
+function spawnMore() {
+  // only spawn 1 replacement — cap handles the rest
+  chrome.runtime.sendMessage({ type: 'SPAWN_ONE' });
+}
+
+document.getElementById('ok-btn').onclick = () => {
+  spawnMore();
+  window.close();
+};
+document.getElementById('x-btn').onclick = () => {
+  chrome.runtime.sendMessage({ type: 'SHOW_FACTORY_RESET' });
+  spawnMore();
+  window.close();
+};
+document.getElementById('reset-btn').onclick = () => {
+  chrome.runtime.sendMessage({ type: 'SHOW_WARNED' });
+  window.close();
+};
+
+// auto-close after 10-15s so the cap never gets permanently full
+setTimeout(() => {
+  spawnMore();
+  window.close();
+}, 10000 + Math.random() * 5000);
+</script>
+</body>
+</html>

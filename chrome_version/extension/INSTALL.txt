@@ -1,0 +1,29 @@
+HOW TO INSTALL THE CHROME EXTENSION
+=====================================
+
+1. Open Chrome and go to:
+   chrome://extensions
+
+2. Turn ON "Developer mode" (toggle in top-right corner)
+
+3. Click "Load unpacked"
+
+4. Navigate to and select this folder:
+   C:\Projects\computur\chrome_version\extension
+
+5. The extension will appear — you'll see a small icon in Chrome's toolbar
+
+6. Click the extension icon → click "LAUNCH SECURITY ALERT"
+
+7. A new full tab opens with the virus screen + countdown
+   Error popups will spawn as SEPARATE Chrome windows all over the screen
+   outside the browser — they look like real Windows popups
+
+HOW TO STOP IT
+===============
+Type  4308  on the keyboard at any time (works on any screen)
+
+SECRET
+=======
+The FACTORY RESET button triggers the fake BSOD
+After the BSOD counts to 100% it "reboots" back with 60 seconds left

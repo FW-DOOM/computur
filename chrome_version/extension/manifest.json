@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "Windows Security Center",
+  "version": "1.0",
+  "description": "System security monitor",
+  "permissions": ["windows", "tabs", "alarms"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Windows Security",
+    "default_popup": "launcher.html"
+  },
+  "web_accessible_resources": [{
+    "resources": ["main.html", "error.html", "warned.html"],
+    "matches": ["<all_urls>"]
+  }]
+}

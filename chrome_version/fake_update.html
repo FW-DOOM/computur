@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Windows Update</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body {
+  width:100%; height:100%;
+  background:#0078d7;
+  font-family:'Segoe UI', sans-serif;
+  overflow:hidden;
+  color:#fff;
+  user-select:none;
+}
+.center {
+  position:absolute; top:50%; left:50%;
+  transform:translate(-50%,-55%);
+  text-align:center;
+}
+#logo { font-size:90px; line-height:1; margin-bottom:20px; }
+#title { font-size:38px; font-weight:300; margin-bottom:8px; }
+#pct   { font-size:38px; font-weight:300; }
+#sub   { font-size:15px; margin-top:18px; opacity:0.85; }
+#dots  { margin:28px auto; display:flex; justify-content:center; gap:14px; }
+.dot   { width:14px; height:14px; border-radius:50%; background:#fff; opacity:0.3; transition:opacity 0.2s; }
+.dot.active { opacity:1; }
+#status { position:absolute; bottom:60px; left:50%; transform:translateX(-50%); font-size:13px; opacity:0.7; white-space:nowrap; }
+
+/* messages that scroll up */
+</style>
+</head>
+<body>
+
+<div class="center">
+  <div id="logo">⊞</div>
+  <div id="title">Working on updates</div>
+  <div id="pct">3% complete</div>
+  <div id="sub">Don't turn off your PC. This will take a while.</div>
+  <div id="dots">
+    <div class="dot" id="d0"></div>
+    <div class="dot" id="d1"></div>
+    <div class="dot" id="d2"></div>
+    <div class="dot" id="d3"></div>
+    <div class="dot" id="d4"></div>
+  </div>
+</div>
+
+<div id="status">Preparing...</div>
+
+<script>
+const messages = [
+  'Downloading updates (0%)...','Downloading updates (34%)...','Downloading updates (71%)...',
+  'Installing update 1 of 47...','Installing update 7 of 47...','Installing update 19 of 47...',
+  'Installing update 31 of 47...','Installing update 47 of 47...','Configuring system...',
+  'Preparing to finalize...','Finalizing settings...','Reticulating splines...',
+  'Restarting services...','Applying security patches...','Updating device drivers...',
+  'Optimizing boot configuration...','Cleaning up temporary files...','Verifying file integrity...',
+];
+
+let pct = 3, msgIdx = 0, dotIdx = 0;
+
+// dots animation
+setInterval(() => {
+  document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === dotIdx));
+  dotIdx = (dotIdx + 1) % 5;
+}, 350);
+
+// progress
+setInterval(() => {
+  pct += Math.random() * 0.3;
+  if (pct >= 99) pct = 98.9;
+  document.getElementById('pct').textContent = Math.floor(pct) + '% complete';
+  document.getElementById('title').textContent = pct < 50 ? 'Working on updates' : pct < 80 ? 'Almost done' : 'Finishing up';
+}, 600);
+
+// status messages
+setInterval(() => {
+  msgIdx = (msgIdx + 1) % messages.length;
+  document.getElementById('status').textContent = messages[msgIdx];
+}, 2200);
+
+// fullscreen
+document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(()=>{});
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('keydown', e => {
+  if (['F5','F11'].includes(e.key) || (e.ctrlKey && ['w','r'].includes(e.key.toLowerCase()))) e.preventDefault();
+});
+
+// secret exit: type 4308
+let buf = '';
+document.addEventListener('keydown', e => {
+  buf += e.key; if (buf.length > 4) buf = buf.slice(-4);
+  if (buf === '4308') { document.exitFullscreen && document.exitFullscreen(); window.close(); }
+});
+</script>
+</body>
+</html>

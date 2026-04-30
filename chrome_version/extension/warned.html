@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin:0;padding:0;box-sizing:border-box; }
+html,body {
+  width:100%;height:100%;
+  background:#ff0000;
+  font-family:'Segoe UI',Impact,sans-serif;
+  overflow:hidden;color:#fff;
+  user-select:none;
+  animation:flash 0.4s infinite;
+}
+@keyframes flash { 0%,100%{background:#ff0000}50%{background:#aa0000} }
+.center {
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  text-align:center;
+}
+h1 {
+  font-size:100px;font-weight:900;font-family:Impact,sans-serif;
+  text-shadow:0 0 40px #000,0 0 80px #000;
+  letter-spacing:8px;
+  animation:shake 0.1s infinite;
+}
+@keyframes shake {
+  0%,100%{transform:translate(0)}
+  25%{transform:translate(-4px,2px)}
+  75%{transform:translate(4px,-2px)}
+}
+p { font-size:20px;color:#ffbbbb;margin:16px 0 10px;font-weight:bold; }
+#stats { font-size:15px;color:#ffcccc;line-height:2;margin-bottom:36px;font-family:Consolas; }
+#btn {
+  background:#000;color:#ff2222;
+  border:3px solid #ff4444;
+  padding:20px 60px;font-size:18px;font-weight:900;
+  cursor:pointer;letter-spacing:2px;text-transform:uppercase;
+  animation:btn-flash 0.5s infinite;
+}
+@keyframes btn-flash {
+  0%,100%{background:#000;border-color:#ff4444}
+  50%{background:#110000;border-color:#ff0000;box-shadow:0 0 40px #ff0000}
+}
+#hint { font-size:11px;color:#ff3333;margin-top:14px; }
+</style>
+</head>
+<body>
+<div class="center">
+  <h1>I WARNED YOU</h1>
+  <p>You ignored every warning. Your files are now being permanently destroyed.</p>
+  <div id="stats">
+    <span id="f">0</span> files deleted &nbsp;·&nbsp;
+    <span id="r">0</span> registry keys wiped &nbsp;·&nbsp;
+    <span id="m">0</span> MB lost
+  </div>
+  <button id="btn" onclick="doReset()">⚠ &nbsp; EMERGENCY FACTORY RESET &nbsp; ⚠</button>
+  <div id="hint">type 4308 to exit</div>
+</div>
+<script>
+let f=0,r=0,m=0;
+setInterval(()=>{
+  f+=Math.floor(Math.random()*80+20);
+  r+=Math.floor(Math.random()*25+5);
+  m+=Math.floor(Math.random()*15+3);
+  document.getElementById('f').textContent=f.toLocaleString();
+  document.getElementById('r').textContent=r.toLocaleString();
+  document.getElementById('m').textContent=m.toLocaleString();
+},350);
+
+function doReset(){
+  chrome.runtime.sendMessage({type:'STOP_CHAOS'});
+  location.href = chrome.runtime.getURL('bsod.html');
+}
+
+let buf='';
+document.addEventListener('keydown',e=>{
+  buf+=e.key; if(buf.length>4) buf=buf.slice(-4);
+  if(buf==='4308') window.close();
+});
+</script>
+</body>
+</html>

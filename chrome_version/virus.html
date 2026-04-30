@@ -9,271 +9,230 @@
 <link rel="manifest" href="manifest.json">
 <title>Windows Security Alert</title>
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
-html, body {
-  width:100%; height:100%;
-  background:#000;
-  font-family:'Segoe UI',Consolas,monospace;
-  overflow:hidden;
-  color:#fff;
-  cursor:default;
-  user-select:none;
-}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas,monospace;overflow:hidden;color:#fff;user-select:none;}
 
-/* ── SCREEN FLASH OVERLAY ── */
-#flash { position:fixed;inset:0;pointer-events:none;z-index:8000;opacity:0; background:#ff0000; }
+/* flash */
+#flash{position:fixed;inset:0;pointer-events:none;z-index:8000;opacity:0;background:#ff0000;}
 
-/* ── TOPBAR ── */
-#topbar {
-  position:fixed;top:0;left:0;right:0;
-  background:#cc0000;padding:7px 20px;
-  font-size:13px;font-weight:bold;
-  display:flex;justify-content:space-between;align-items:center;
-  z-index:200;animation:pulse-bar 0.6s infinite;
-}
-@keyframes pulse-bar { 0%,100%{background:#aa0000}50%{background:#ff0000} }
+/* topbar */
+#topbar{position:fixed;top:0;left:0;right:0;background:#cc0000;padding:7px 20px;font-size:13px;font-weight:bold;display:flex;justify-content:space-between;align-items:center;z-index:200;animation:pbar .6s infinite;}
+@keyframes pbar{0%,100%{background:#aa0000}50%{background:#ff0000}}
 
-/* ── MAIN ── */
-#main {
-  width:100%;height:100%;
-  background:radial-gradient(ellipse at center,#0d0005 0%,#000 80%);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  position:relative;z-index:1;padding-top:36px;
-  animation:shake 0s;
-}
-@keyframes shake {
-  0%,100%{transform:translate(0)}10%{transform:translate(-6px,4px)}
-  20%{transform:translate(6px,-4px)}30%{transform:translate(-4px,6px)}
-  40%{transform:translate(4px,-6px)}50%{transform:translate(-6px,2px)}
-  60%{transform:translate(6px,-2px)}70%{transform:translate(-4px,4px)}
-  80%{transform:translate(4px,-4px)}90%{transform:translate(-2px,6px)}
-}
+/* main */
+#main{width:100%;height:100%;background:radial-gradient(ellipse at center,#0d0005 0%,#000 80%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:38px;padding-bottom:70px;}
 
-/* ── COUNTDOWN ── */
-#countdown-box {
-  background:#1a0000;border:2px solid #ff0000;border-radius:8px;
-  padding:14px 40px;text-align:center;margin-bottom:18px;
-  animation:glow 1s infinite;
-}
-@keyframes glow {
-  0%,100%{box-shadow:0 0 30px #ff000099}
-  50%{box-shadow:0 0 70px #ff0000ee,0 0 120px #ff000055}
-}
-#countdown-label{font-size:12px;color:#ff7777;letter-spacing:3px;text-transform:uppercase;}
-#countdown-timer{font-size:80px;font-weight:bold;color:#ff1111;font-family:Consolas;letter-spacing:8px;line-height:1;}
-#countdown-sub{font-size:11px;color:#ff5555;margin-top:4px;}
+/* countdown */
+#cbox{background:#1a0000;border:2px solid #ff0000;border-radius:8px;padding:14px 40px;text-align:center;margin-bottom:16px;animation:glow 1s infinite;}
+@keyframes glow{0%,100%{box-shadow:0 0 30px #ff000099}50%{box-shadow:0 0 70px #ff0000ee}}
+#clabel{font-size:12px;color:#ff7777;letter-spacing:3px;text-transform:uppercase;}
+#ctimer{font-size:80px;font-weight:bold;color:#ff1111;font-family:Consolas;letter-spacing:8px;line-height:1;}
+#csub{font-size:11px;color:#ff5555;margin-top:4px;}
 
-/* ── THREAT BOX ── */
-#threat-box {
-  background:#0d0d0d;border:1px solid #330000;border-left:5px solid #ff0000;
-  border-radius:3px;padding:16px 24px;max-width:780px;width:92%;margin-bottom:14px;
-}
-#threat-title{font-size:16px;font-weight:bold;color:#ff2222;margin-bottom:10px;}
-.threat-row{display:flex;gap:14px;margin:4px 0;font-size:11px;}
-.threat-key{color:#666;width:155px;flex-shrink:0;}
-.threat-val{color:#ffaaaa;}
-.threat-val.red{color:#ff3333;font-weight:bold;}
-.threat-val.orange{color:#ff7700;}
+/* threat */
+#threat{background:#0d0d0d;border:1px solid #330000;border-left:5px solid #ff0000;border-radius:3px;padding:14px 22px;max-width:780px;width:92%;margin-bottom:12px;}
+#ttitle{font-size:15px;font-weight:bold;color:#ff2222;margin-bottom:8px;}
+.tr{display:flex;gap:12px;margin:3px 0;font-size:11px;}
+.tk{color:#666;width:150px;flex-shrink:0;}
+.tv{color:#ffaaaa;}.tv.r{color:#ff3333;font-weight:bold;}.tv.o{color:#ff7700;}
 
-/* ── FILE LIST ── */
-#file-list {
-  background:#080008;border:1px solid #330033;border-radius:3px;
-  padding:10px 16px;max-width:780px;width:92%;margin-bottom:14px;
-  font-size:11px;max-height:96px;overflow:hidden;
-}
-#file-list-title{color:#ff3333;font-size:11px;font-weight:bold;margin-bottom:6px;}
-.file-item{color:#cc5555;margin:2px 0;animation:fadein 0.2s;}
-@keyframes fadein{from{opacity:0;transform:translateX(-8px)}to{opacity:1}}
+/* panels */
+#panels{display:flex;gap:12px;max-width:780px;width:92%;margin-bottom:12px;}
+.panel{flex:1;background:#080008;border:1px solid #330033;border-radius:3px;padding:10px 14px;font-size:10px;max-height:90px;overflow:hidden;}
+.ptitle{color:#ff3333;font-size:11px;font-weight:bold;margin-bottom:5px;}
+.fitem{color:#cc5555;margin:1px 0;animation:fi .2s;}
+.litem{color:#44ff44;margin:1px 0;font-family:Consolas;animation:fi .2s;}
+@keyframes fi{from{opacity:0;transform:translateX(-6px)}to{opacity:1}}
 
-/* ── PROGRESS ── */
-#progress-section{max-width:780px;width:92%;margin-bottom:16px;}
-#progress-label{font-size:11px;color:#777;margin-bottom:4px;}
-#progress-bar-bg{background:#1a0000;border:1px solid #440000;border-radius:2px;height:16px;overflow:hidden;}
-#progress-bar-fill{height:100%;background:linear-gradient(90deg,#660000,#cc2200,#ff5500);width:0%;transition:width 0.3s;}
+/* progress */
+#prog{max-width:780px;width:92%;margin-bottom:14px;}
+#plabel{font-size:11px;color:#777;margin-bottom:4px;}
+#pbg{background:#1a0000;border:1px solid #440000;border-radius:2px;height:15px;overflow:hidden;}
+#pfill{height:100%;background:linear-gradient(90deg,#660000,#cc2200,#ff5500);width:0%;transition:width .3s;}
 
-/* ── ACTIVITY LOG ── */
-#log-box {
-  background:#050505;border:1px solid #222;border-radius:3px;
-  padding:8px 14px;max-width:780px;width:92%;margin-bottom:16px;
-  font-size:10px;font-family:Consolas;max-height:70px;overflow:hidden;
-}
-#log-title{color:#555;margin-bottom:4px;font-size:10px;}
-.log-line{color:#44ff44;margin:1px 0;animation:fadein 0.2s;}
+/* factory reset */
+#btnreset{background:#cc0000;color:#fff;border:none;padding:18px 56px;font-size:16px;font-weight:bold;border-radius:4px;cursor:pointer;letter-spacing:1px;animation:bp .5s infinite;text-transform:uppercase;margin-bottom:6px;}
+@keyframes bp{0%,100%{background:#cc0000;transform:scale(1)}50%{background:#ff0000;transform:scale(1.04);box-shadow:0 0 30px #ff0000bb}}
+#hint{font-size:10px;color:#0d0d0d;margin-top:4px;}
 
-/* ── FACTORY RESET BUTTON ── */
-#btn-reset {
-  background:#cc0000;color:#fff;border:none;
-  padding:20px 60px;font-size:17px;font-weight:bold;
+/* ── RESTORE DATA button — ALWAYS ON TOP ── */
+#btn-restore{
+  position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+  background:#006600;color:#fff;border:2px solid #00aa00;
+  padding:14px 48px;font-size:15px;font-weight:bold;
   border-radius:4px;cursor:pointer;letter-spacing:1px;
-  animation:btn-pulse 0.5s infinite;margin-bottom:8px;
-  text-transform:uppercase;
+  z-index:99999;text-transform:uppercase;
+  animation:restore-pulse 1.2s infinite;
+  white-space:nowrap;
 }
-@keyframes btn-pulse {
-  0%,100%{background:#cc0000;transform:scale(1);}
-  50%{background:#ff0000;transform:scale(1.05);box-shadow:0 0 30px #ff0000bb,0 0 60px #ff000044;}
-}
-#btn-reset:hover{background:#ff2222;}
-#secret-hint{font-size:10px;color:#0a0a0a;margin-top:6px;}
+@keyframes restore-pulse{0%,100%{background:#006600;border-color:#00aa00}50%{background:#009900;border-color:#00ff00;box-shadow:0 0 20px #00ff0066}}
+#btn-restore:hover{background:#00aa00;}
 
-/* ── FLOATING ERRORS ── */
-.float-error {
-  position:fixed;background:#fff;border:1px solid #aaa;
-  border-top:3px solid #cc0000;border-radius:0 0 3px 3px;
-  padding:10px 12px;min-width:300px;max-width:380px;
-  font-size:11px;color:#222;z-index:600;
-  box-shadow:2px 2px 8px #00000066;
-  animation:pop-in 0.15s ease-out;
-}
-@keyframes pop-in{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
-.float-titlebar{
-  background:#0078d7;color:#fff;font-size:11px;font-weight:bold;
-  margin:-10px -12px 8px -12px;padding:4px 10px;
-  display:flex;justify-content:space-between;align-items:center;
-}
-.float-icon{font-size:20px;float:left;margin-right:8px;}
-.float-body{overflow:hidden;}
-.float-msg{color:#222;margin-top:4px;font-size:11px;line-height:1.4;}
+/* float errors */
+.float-error{position:fixed;background:#fff;border:1px solid #aaa;border-top:3px solid #cc0000;border-radius:0 0 3px 3px;padding:10px 12px;min-width:300px;max-width:380px;font-size:11px;color:#222;z-index:600;box-shadow:2px 2px 8px #00000066;animation:pop-in .15s ease-out;}
+@keyframes pop-in{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+.float-titlebar{background:#0078d7;color:#fff;font-size:11px;font-weight:bold;margin:-10px -12px 8px -12px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;}
+.float-titlebar.red{background:#cc0000;}
+.float-titlebar.orange{background:#cc6600;}
+.float-titlebar.dark{background:#1a1a1a;border-bottom:1px solid #333;}
+.float-msg{color:#222;font-size:11px;line-height:1.4;}
 .float-btns{margin-top:8px;display:flex;gap:6px;}
-.float-btn{
-  background:#e0e0e0;border:1px solid #999;color:#222;
-  padding:3px 14px;font-size:11px;cursor:pointer;border-radius:2px;
-}
+.float-btn{background:#e0e0e0;border:1px solid #999;color:#222;padding:3px 14px;font-size:11px;cursor:pointer;border-radius:2px;}
 .float-btn:hover{background:#d0d0d0;}
 .float-btn.red{background:#cc0000;color:#fff;border-color:#aa0000;font-weight:bold;}
 .float-btn.red:hover{background:#ff0000;}
+.float-btn.green{background:#006600;color:#fff;border-color:#004400;font-weight:bold;}
+.float-btn.green:hover{background:#009900;}
 
-/* ── I WARNED YOU SCREEN ── */
-#warned {
-  display:none;position:fixed;inset:0;background:#ff0000;z-index:9990;
-  flex-direction:column;align-items:center;justify-content:center;text-align:center;
-  animation:warned-flash 0.4s infinite;
-}
-@keyframes warned-flash{0%,100%{background:#ff0000}50%{background:#cc0000}}
-#warned h1{
-  font-size:96px;font-weight:900;color:#fff;text-shadow:0 0 40px #000,0 0 80px #000;
-  letter-spacing:8px;animation:text-shake 0.1s infinite;line-height:1;
-}
-@keyframes text-shake{
-  0%,100%{transform:translate(0)}
-  25%{transform:translate(-3px,2px)}
-  75%{transform:translate(3px,-2px)}
-}
-#warned p{font-size:22px;color:#ffaaaa;margin:20px 0 40px;font-weight:bold;}
-#warned-sub{font-size:15px;color:#ff8888;margin-bottom:40px;line-height:1.8;}
-#btn-warned-reset{
-  background:#000;color:#ff0000;border:3px solid #ff4444;
-  padding:22px 70px;font-size:20px;font-weight:900;
-  border-radius:4px;cursor:pointer;letter-spacing:2px;
-  animation:warned-btn 0.5s infinite;text-transform:uppercase;
-}
-@keyframes warned-btn{
-  0%,100%{background:#000;border-color:#ff4444;}
-  50%{background:#110000;border-color:#ff0000;box-shadow:0 0 40px #ff0000;}
-}
-#warned-secret{font-size:11px;color:#ff3333;margin-top:16px;}
+/* modal */
+#modal{display:none;position:fixed;inset:0;background:#000000cc;z-index:9000;align-items:center;justify-content:center;}
+#mbox{background:#0d0d0d;border:1px solid #440000;border-top:6px solid #cc0000;width:520px;padding:24px 30px;border-radius:4px;}
+#mbox h2{color:#ff3333;font-size:15px;margin-bottom:10px;}
+#mbox p{color:#ffaaaa;font-size:11px;line-height:1.7;margin-bottom:16px;text-align:center;}
+#mbtn{width:100%;padding:16px;background:#cc0000;color:#fff;border:none;font-size:14px;font-weight:bold;cursor:pointer;border-radius:3px;animation:bp .5s infinite;}
 
-/* ── BSOD ── */
+/* BSOD */
 #bsod{display:none;position:fixed;inset:0;background:#0000aa;z-index:9999;padding:80px 140px;font-family:Consolas,monospace;}
 #bsod-sad{font-size:100px;color:#fff;line-height:1;margin-bottom:20px;}
 #bsod-text{font-size:22px;color:#fff;line-height:1.7;}
 #bsod-pct{font-size:22px;color:#fff;margin-top:28px;}
+#bsod-gotcha{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+#bsod-gotcha h1{font-size:120px;font-weight:900;color:#fff;font-family:Impact,sans-serif;letter-spacing:8px;animation:gotcha-pop .3s ease-out;}
+@keyframes gotcha-pop{from{transform:scale(.3);opacity:0}to{transform:scale(1);opacity:1}}
 #bsod-code{position:absolute;bottom:80px;left:140px;font-size:14px;color:#fff;line-height:1.9;}
 
-/* ── FULLSCREEN BLOCK ── */
-#fs-block{
-  display:none;position:fixed;inset:0;background:#000000ee;z-index:9997;
-  flex-direction:column;align-items:center;justify-content:center;text-align:center;
-}
+/* warned */
+#warned{display:none;position:fixed;inset:0;background:#ff0000;z-index:9990;flex-direction:column;align-items:center;justify-content:center;text-align:center;animation:wflash .4s infinite;}
+@keyframes wflash{0%,100%{background:#ff0000}50%{background:#aa0000}}
+#warned h1{font-size:96px;font-weight:900;color:#fff;font-family:Impact,sans-serif;letter-spacing:8px;animation:wshake .1s infinite;line-height:1;}
+@keyframes wshake{0%,100%{transform:translate(0)}25%{transform:translate(-4px,2px)}75%{transform:translate(4px,-2px)}}
+#warned p{font-size:20px;color:#ffaaaa;margin:16px 0 8px;font-weight:bold;}
+#warned-stats{font-size:14px;color:#ffcccc;line-height:2.2;font-family:Consolas;margin-bottom:28px;}
+#warned-btns{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;}
+#btn-warned-reset{background:#000;color:#ff2222;border:3px solid #ff4444;padding:18px 50px;font-size:17px;font-weight:900;cursor:pointer;letter-spacing:2px;text-transform:uppercase;animation:wbtn .5s infinite;}
+@keyframes wbtn{0%,100%{background:#000;border-color:#ff4444}50%{background:#110000;border-color:#ff0000;box-shadow:0 0 40px #ff0000}}
+#btn-warned-continue{background:#006600;color:#fff;border:3px solid #00aa00;padding:18px 50px;font-size:17px;font-weight:900;cursor:pointer;letter-spacing:2px;text-transform:uppercase;}
+#btn-warned-continue:hover{background:#009900;}
+#warned-secret{font-size:11px;color:#ff3333;margin-top:14px;}
+
+/* fs block */
+#fs-block{display:none;position:fixed;inset:0;background:#000000ee;z-index:9997;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
 #fs-block h1{font-size:34px;color:#ff2222;margin-bottom:14px;}
 #fs-block p{font-size:15px;color:#ff8888;margin-bottom:28px;}
 #fs-btn{background:#cc0000;color:#fff;border:none;padding:14px 44px;font-size:15px;font-weight:bold;border-radius:3px;cursor:pointer;}
+
+/* RESTORE overlay */
+#restore-screen{display:none;position:fixed;inset:0;background:#001a00;z-index:9800;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+#restore-screen h2{color:#00ff00;font-size:28px;margin-bottom:20px;}
+#restore-bar-bg{width:400px;max-width:80vw;height:20px;background:#002200;border:1px solid #00aa00;border-radius:3px;overflow:hidden;margin-bottom:12px;}
+#restore-bar{height:100%;background:linear-gradient(90deg,#006600,#00ff00);width:0%;transition:width .3s;}
+#restore-msg{color:#44ff44;font-size:13px;font-family:Consolas;}
+
+/* jumpscare */
+#jumpscare{display:none;position:fixed;inset:0;z-index:99998;background:#fff;flex-direction:column;align-items:center;justify-content:center;animation:jflash .08s infinite;}
+@keyframes jflash{0%,100%{background:#fff}50%{background:#ff0000}}
+#jumpscare-text{font-size:160px;animation:jspin .2s infinite;}
+@keyframes jspin{0%{transform:scale(1) rotate(0deg)}50%{transform:scale(1.15) rotate(-3deg)}100%{transform:scale(1) rotate(3deg)}}
 </style>
 </head>
 <body>
-
 <div id="flash"></div>
 
 <div id="topbar">
-  <span>⚠ WINDOWS SECURITY — CRITICAL THREAT ACTIVE — IMMEDIATE ACTION REQUIRED</span>
-  <span id="top-timer" style="font-family:Consolas">⏱ Files deleted in: 05:00</span>
+  <span id="topbar-msg">⚠ WINDOWS SECURITY — CRITICAL THREAT ACTIVE — IMMEDIATE ACTION REQUIRED</span>
+  <span id="top-timer" style="font-family:Consolas">⏱ Files deleted in: 03:00</span>
 </div>
 
 <div id="main">
-
-  <div id="countdown-box">
-    <div id="countdown-label">⚠ &nbsp; FILE ENCRYPTION BEGINS IN &nbsp; ⚠</div>
-    <div id="countdown-timer">05:00</div>
-    <div id="countdown-sub">All personal files will be permanently encrypted — ransom demand incoming</div>
+  <div id="cbox">
+    <div id="clabel">⚠ &nbsp; FILE ENCRYPTION BEGINS IN &nbsp; ⚠</div>
+    <div id="ctimer">03:00</div>
+    <div id="csub">All personal files will be permanently encrypted — ransom demand incoming</div>
   </div>
-
-  <div id="threat-box">
-    <div id="threat-title">⛔ &nbsp; ACTIVE THREAT DETECTED ON THIS DEVICE</div>
-    <div class="threat-row"><span class="threat-key">Threat name:</span><span class="threat-val red">Ransom:Win32/Petya.A &nbsp;+&nbsp; Trojan:Win32/Wacatac.H!ml</span></div>
-    <div class="threat-row"><span class="threat-key">Severity:</span><span class="threat-val red">████████████ CRITICAL</span></div>
-    <div class="threat-row"><span class="threat-key">Status:</span><span class="threat-val red">SPREADING — <span id="spread-count">3</span> system processes infected</span></div>
-    <div class="threat-row"><span class="threat-key">Affected:</span><span class="threat-val">C:\Windows\System32\lsass.exe &nbsp;+&nbsp; ntoskrnl.exe</span></div>
-    <div class="threat-row"><span class="threat-key">Registry changes:</span><span class="threat-val red">YES — <span id="reg-count">47</span> keys modified &amp; growing</span></div>
-    <div class="threat-row"><span class="threat-key">Network leak:</span><span class="threat-val red">ACTIVE — transmitting to 185.220.101.47</span></div>
-    <div class="threat-row"><span class="threat-key">Data at risk:</span><span class="threat-val orange"><span id="data-mb">128</span> MB of personal files identified</span></div>
-    <div class="threat-row"><span class="threat-key">Error codes:</span><span class="threat-val">0xC004F074 · 0x0000007E · 0x800701E3 · 0xFFFF9F04</span></div>
+  <div id="threat">
+    <div id="ttitle">⛔ &nbsp; ACTIVE THREAT DETECTED ON THIS DEVICE</div>
+    <div class="tr"><span class="tk">Threat name:</span><span class="tv r">Ransom:Win32/Petya.A &nbsp;+&nbsp; Trojan:Win32/Wacatac.H!ml</span></div>
+    <div class="tr"><span class="tk">Severity:</span><span class="tv r">████████████ CRITICAL</span></div>
+    <div class="tr"><span class="tk">Status:</span><span class="tv r">SPREADING — <span id="sprcount">3</span> system processes infected</span></div>
+    <div class="tr"><span class="tk">Affected:</span><span class="tv">C:\Windows\System32\lsass.exe &nbsp;+&nbsp; ntoskrnl.exe</span></div>
+    <div class="tr"><span class="tk">Registry changes:</span><span class="tv r">YES — <span id="regcount">47</span> keys modified &amp; growing</span></div>
+    <div class="tr"><span class="tk">Network leak:</span><span class="tv r">ACTIVE — transmitting to 185.220.101.47</span></div>
+    <div class="tr"><span class="tk">Data at risk:</span><span class="tv o"><span id="datamb">128</span> MB of personal files identified</span></div>
+    <div class="tr"><span class="tk">Error codes:</span><span class="tv">0xC004F074 · 0x0000007E · 0x800701E3 · 0xFFFF9F04</span></div>
   </div>
-
-  <div style="display:flex;gap:14px;max-width:780px;width:92%;margin-bottom:14px;">
-    <div id="file-list" style="flex:1;margin-bottom:0">
-      <div id="file-list-title">🔒 ENCRYPTING — <span id="file-count">0</span> FILES</div>
-      <div id="file-items"></div>
+  <div id="panels">
+    <div class="panel">
+      <div class="ptitle">🔒 ENCRYPTING — <span id="fcount">0</span> FILES</div>
+      <div id="fitems"></div>
     </div>
-    <div id="log-box" style="flex:1;margin-bottom:0">
-      <div id="log-title">▶ SYSTEM ACTIVITY LOG</div>
-      <div id="log-items"></div>
+    <div class="panel">
+      <div class="ptitle">▶ SYSTEM ACTIVITY LOG</div>
+      <div id="litems"></div>
     </div>
   </div>
-
-  <div id="progress-section">
-    <div id="progress-label">Encryption progress &nbsp;·&nbsp; <span id="pct-label">0%</span> &nbsp;·&nbsp; <span id="files-done">0</span> files encrypted</div>
-    <div id="progress-bar-bg"><div id="progress-bar-fill"></div></div>
+  <div id="prog">
+    <div id="plabel">Encryption progress · <span id="ppct">0%</span> · <span id="fdone">0</span> files encrypted</div>
+    <div id="pbg"><div id="pfill"></div></div>
   </div>
+  <button id="btnreset" onclick="showModal()">⚠ &nbsp;&nbsp; FACTORY RESET &nbsp;—&nbsp; ONLY SAFE OPTION &nbsp;&nbsp; ⚠</button>
+  <div id="hint">type 4308 to exit</div>
+</div>
 
-  <button id="btn-reset" onclick="startBsod()">
-    ⚠ &nbsp;&nbsp; FACTORY RESET &nbsp;—&nbsp; ONLY SAFE OPTION &nbsp;&nbsp; ⚠
-  </button>
-  <div id="secret-hint">type 4308 to exit</div>
+<!-- ALWAYS VISIBLE RESTORE BUTTON -->
+<button id="btn-restore" onclick="startRestore()">✔ &nbsp; RESTORE DATA &nbsp; ✔</button>
 
+<!-- factory reset modal -->
+<div id="modal">
+  <div id="mbox">
+    <h2>⚠ SYSTEM CANNOT BE RECOVERED</h2>
+    <p>Critical system processes have failed.<br>Your personal files and Windows installation are at risk.<br><br>The ONLY safe option is a Factory Reset to prevent<br>permanent data loss and hardware damage.</p>
+    <button id="mbtn" onclick="doReset()">⚠ &nbsp; FACTORY RESET — Recommended &nbsp; ⚠</button>
+    <div style="text-align:center;margin-top:8px;font-size:10px;color:#333;cursor:pointer" onclick="document.getElementById('modal').style.display='none'">cancel (not recommended)</div>
+  </div>
+</div>
+
+<!-- RESTORE overlay -->
+<div id="restore-screen">
+  <h2>✔ Data Restoration In Progress</h2>
+  <div id="restore-bar-bg"><div id="restore-bar"></div></div>
+  <div id="restore-msg">Scanning files...</div>
 </div>
 
 <!-- I WARNED YOU -->
 <div id="warned">
-  <h1>I WARNED YOU</h1>
+  <h1>I WARNED YOU!</h1>
   <p>You ignored every warning. Your files are now being permanently destroyed.</p>
-  <div id="warned-sub">
-    <span id="warned-files">0</span> files deleted &nbsp;·&nbsp;
-    <span id="warned-reg">0</span> registry keys wiped &nbsp;·&nbsp;
-    <span id="warned-mb">0</span> MB lost<br><br>
-    There is ONE option remaining.
+  <div id="warned-stats">
+    <span id="wf">0</span> files deleted &nbsp;·&nbsp;
+    <span id="wr">0</span> registry keys wiped &nbsp;·&nbsp;
+    <span id="wm">0</span> MB lost
   </div>
-  <button id="btn-warned-reset" onclick="startBsod()">
-    ⚠ &nbsp; EMERGENCY FACTORY RESET &nbsp; ⚠
-  </button>
+  <div id="warned-btns">
+    <button id="btn-warned-reset" onclick="doReset()">⚠ &nbsp; EMERGENCY FACTORY RESET &nbsp; ⚠</button>
+    <button id="btn-warned-continue" onclick="continueFromWarned()">CONTINUE →</button>
+  </div>
   <div id="warned-secret">type 4308 to exit</div>
 </div>
 
 <!-- BSOD -->
 <div id="bsod">
   <div id="bsod-sad">:(</div>
-  <div id="bsod-text">
-    Your PC ran into a problem and needs to restart.<br>
-    We're just collecting some error info, and then<br>
-    we'll restart for you.
-  </div>
+  <div id="bsod-text">Your PC ran into a problem and needs to restart.<br>We're just collecting some error info, and then<br>we'll restart for you.</div>
   <div id="bsod-pct">0% complete</div>
-  <div id="bsod-code">
-    For more info about this error, search online for:<br>
-    <strong>Stop code: &nbsp; CRITICAL_PROCESS_DIED</strong><br>
-    What failed: &nbsp; ntoskrnl.exe
+  <div id="bsod-gotcha">
+    <div style="font-size:60px">😂</div>
+    <h1>GOT YOU!</h1>
+    <div style="font-size:22px;color:#aaddff;margin-top:10px;font-family:'Segoe UI',sans-serif;font-weight:normal">lmaooo</div>
   </div>
+  <div id="bsod-code">Stop code: &nbsp;<strong>CRITICAL_PROCESS_DIED</strong><br>What failed: &nbsp;ntoskrnl.exe</div>
 </div>
 
-<!-- Fullscreen nag -->
+<!-- JUMPSCARE -->
+<div id="jumpscare">
+  <div id="jumpscare-text">💀</div>
+</div>
+
+<!-- fullscreen block -->
 <div id="fs-block">
   <h1>⚠ DO NOT LEAVE THIS PAGE</h1>
   <p>Closing this window may cause permanent data loss.<br>The threat is still active and spreading.</p>
@@ -281,315 +240,239 @@ html, body {
 </div>
 
 <script>
-// ─── AUDIO ENGINE ───
-let audioCtx = null;
-function getAudio() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  return audioCtx;
+// ── audio ──
+let actx=null;
+function getA(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();return actx;}
+function beep(f,d,v=.15,t='square'){try{const c=getA(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;o.type=t;g.gain.setValueAtTime(v,c.currentTime);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+d);o.start();o.stop(c.currentTime+d);}catch(e){}}
+function alarm(){beep(1200,.08,.2);setTimeout(()=>beep(800,.08,.2),120);setTimeout(()=>beep(1200,.08,.2),240);}
+function scream(){[300,480,620,800,950,1100,800,500].forEach((f,i)=>setTimeout(()=>beep(f,.18,.25,'sawtooth'),i*60));}
+function megaScream(){
+  // WAY more intense
+  for(let i=0;i<12;i++) setTimeout(()=>{
+    beep(200+Math.random()*3000,.2,.4,'sawtooth');
+    beep(100+Math.random()*1500,.3,.3,'square');
+  },i*40);
+  beep(80,.8,.5,'sine');
 }
-function beep(freq, dur, vol=0.15, type='square') {
-  try {
-    const ctx = getAudio();
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
-    o.frequency.value = freq; o.type = type;
-    g.gain.setValueAtTime(vol, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
-    o.start(); o.stop(ctx.currentTime + dur);
-  } catch(e) {}
-}
-function alarmBeep() {
-  beep(1200, 0.08, 0.2);
-  setTimeout(() => beep(800, 0.08, 0.2), 120);
-  setTimeout(() => beep(1200, 0.08, 0.2), 240);
-}
-function scream() {
-  // layered noise burst
-  for (let i = 0; i < 6; i++) {
-    setTimeout(() => beep(300 + i*180, 0.18, 0.25, 'sawtooth'), i * 60);
-  }
-}
+document.addEventListener('click',()=>{try{getA().resume();}catch(e){}},{once:true});
 
-// start beeping every 2.5s, speed up as time runs out
-let beepInterval = 2500;
-function scheduleBeep() {
-  alarmBeep();
-  setTimeout(scheduleBeep, beepInterval);
-}
-document.addEventListener('click', () => { try { getAudio().resume(); } catch(e){} }, {once:true});
-setTimeout(scheduleBeep, 1500);
+// ── flash ──
+const flashEl=document.getElementById('flash');
+function flash(color='#ff0000',ms=80){flashEl.style.background=color;flashEl.style.opacity='.6';setTimeout(()=>flashEl.style.opacity='0',ms);}
 
-// ─── FLASH ───
-const flashEl = document.getElementById('flash');
-function flashScreen(color='#ff0000', ms=80) {
-  flashEl.style.background = color;
-  flashEl.style.opacity = '0.55';
-  setTimeout(() => flashEl.style.opacity = '0', ms);
-}
+// ── fullscreen ──
+function goFullscreen(){document.getElementById('fs-block').style.display='none';document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{});}
+document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{}),400));
+document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement)document.getElementById('fs-block').style.display='flex';});
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('keydown',e=>{if(e.key==='F5'||e.key==='F11'||(e.ctrlKey&&['w','r','t','n','l','u'].includes(e.key.toLowerCase())))e.preventDefault();});
 
-// ─── SCREEN SHAKE ───
-function shake(dur=400) {
-  document.getElementById('main').style.animation = `shake ${dur}ms linear`;
-  setTimeout(() => document.getElementById('main').style.animation = '', dur);
-}
-
-// ─── FULLSCREEN ───
-function goFullscreen() {
-  document.getElementById('fs-block').style.display = 'none';
-  document.documentElement.requestFullscreen().catch(() => {});
-}
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => document.documentElement.requestFullscreen().catch(() => {}), 400);
-});
-document.addEventListener('fullscreenchange', () => {
-  if (!document.fullscreenElement)
-    document.getElementById('fs-block').style.display = 'flex';
-});
-document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('keydown', e => {
-  if (e.key === 'F5' || e.key === 'F11' || (e.ctrlKey && ['w','r','t','n','l','u'].includes(e.key.toLowerCase())))
-    e.preventDefault();
+// ── secret exit ──
+let secretBuf='';
+document.addEventListener('keydown',e=>{
+  secretBuf+=e.key;if(secretBuf.length>4)secretBuf=secretBuf.slice(-4);
+  if(secretBuf==='4308'){document.exitFullscreen&&document.exitFullscreen();window.close();}
 });
 
-// ─── SECRET EXIT ───
-let secretBuf = '';
-document.addEventListener('keydown', e => {
-  secretBuf += e.key;
-  if (secretBuf.length > 4) secretBuf = secretBuf.slice(-4);
-  if (secretBuf === '4308') {
-    document.exitFullscreen().then(()=>window.close()).catch(()=>window.close());
-  }
-});
+// ── countdown (3 min) ──
+let secs=180,cdPaused=false;
+const timerEl=document.getElementById('ctimer'),topEl=document.getElementById('top-timer');
+let beepMs=3000,lastBeep=Date.now();
+setInterval(()=>{if(Date.now()-lastBeep>=beepMs){alarm();lastBeep=Date.now();}},100);
 
-// ─── COUNTDOWN ───
-let totalSec = 300;
-const timerEl   = document.getElementById('countdown-timer');
-const topTimer  = document.getElementById('top-timer');
-const cntBox    = document.getElementById('countdown-box');
+const cdInterval=setInterval(()=>{
+  if(cdPaused)return;
+  secs--;
+  if(secs<=0){clearInterval(cdInterval);triggerWarned();return;}
+  const m=String(Math.floor(secs/60)).padStart(2,'0'),s=String(secs%60).padStart(2,'0');
+  timerEl.textContent=`${m}:${s}`;topEl.textContent=`⏱ Files deleted in: ${m}:${s}`;
+  if(secs===90){beepMs=1500;flash('#ff000033',60);}
+  if(secs===60){beepMs=800;timerEl.style.fontSize='90px';scream();}
+  if(secs===30){beepMs=400;timerEl.style.color='#ff0000';flash('#ff000066',100);}
+  if(secs<=10){beepMs=180;timerEl.style.fontSize='100px';flash('#ff000099',160);if(secs%2===0)scream();}
+},1000);
 
-const countdown = setInterval(() => {
-  totalSec--;
+// ── live counters ──
+setInterval(()=>{const e=document.getElementById('regcount');if(e)e.textContent=+e.textContent+Math.floor(Math.random()*3+1);},1100);
+setInterval(()=>{const e=document.getElementById('sprcount');if(e&&+e.textContent<47)e.textContent=+e.textContent+1;},2800);
+let dmb=128;setInterval(()=>{dmb+=Math.floor(Math.random()*8+2);const e=document.getElementById('datamb');if(e)e.textContent=dmb;},1400);
+const msgs=['⚠ WINDOWS SECURITY — CRITICAL THREAT ACTIVE','🔴 RANSOMWARE SPREADING — IMMEDIATE ACTION REQUIRED','⛔ DATA EXFILTRATION IN PROGRESS','💀 SYSTEM INTEGRITY COMPROMISED','🔴 YOUR FILES ARE BEING STOLEN RIGHT NOW'];
+let mi=0;setInterval(()=>{mi=(mi+1)%msgs.length;document.getElementById('topbar-msg').textContent=msgs[mi];},4000);
 
-  if (totalSec <= 0) {
-    clearInterval(countdown);
-    triggerWarned();
-    return;
-  }
+// ── encryption progress ──
+let pct=0,fdone=0;const pfill=document.getElementById('pfill');
+setInterval(()=>{pct=Math.min(pct+Math.random()*.6,99.9);fdone+=Math.floor(Math.random()*3);pfill.style.width=pct.toFixed(1)+'%';document.getElementById('ppct').textContent=pct.toFixed(0)+'%';document.getElementById('fdone').textContent=fdone;},280);
 
-  const m = String(Math.floor(totalSec/60)).padStart(2,'0');
-  const s = String(totalSec%60).padStart(2,'0');
-  timerEl.textContent = `${m}:${s}`;
-  topTimer.textContent = `⏱ Files deleted in: ${m}:${s}`;
+// ── file list ──
+const files=['Documents\\taxes_2024.xlsx','Documents\\passwords.txt','Pictures\\family_photos.zip','Desktop\\work_project.docx','Documents\\bank_statements.pdf','Desktop\\id_scan.jpg','Documents\\medical_records.pdf','AppData\\Chrome\\Login Data','Documents\\ssn_info.txt','Desktop\\crypto_wallet.dat','Documents\\contracts_2024.zip','Documents\\tax_returns_2022.pdf','Documents\\insurance_docs.pdf','Downloads\\private_photos.zip','AppData\\Roaming\\credentials','Desktop\\passport_scan.jpg','AppData\\Discord\\tokens','Documents\\credit_card_info.txt','Desktop\\recovery_codes.txt','Documents\\will_and_testament.pdf'];
+let fi=0;const fbox=document.getElementById('fitems');
+setInterval(()=>{const el=document.createElement('div');el.className='fitem';el.textContent='🔒 C:\\Users\\User\\'+files[fi++%files.length];fbox.prepend(el);document.getElementById('fcount').textContent=fi;while(fbox.children.length>5)fbox.removeChild(fbox.lastChild);},480);
 
-  // escalate as time drops
-  if (totalSec === 120) { beepInterval = 1800; flashScreen('#ff000033',60); }
-  if (totalSec === 60)  { beepInterval = 900; timerEl.style.fontSize='88px'; shake(300); scream(); }
-  if (totalSec === 30)  { beepInterval = 500; timerEl.style.color='#ff0000'; flashScreen('#ff000066',100); }
-  if (totalSec <= 10)   {
-    beepInterval = 250;
-    timerEl.style.fontSize = '100px';
-    flashScreen('#ff000088', 150);
-    shake(200);
-    if (totalSec % 2 === 0) scream();
-  }
-}, 1000);
+// ── activity log ──
+const logs=['[lsass.exe] injecting into svchost.exe PID 4812','[KERNEL] Page fault at 0xFFFFFA8003B2C000','[NET] Sending 4.1KB to 185.220.101.47:443','[REG] HKLM\\System\\CurrentControlSet modified','[DISK] Writing to MBR sector 0','[CRYPT] AES-256 key generated','[CAM] Accessing webcam device...','[MIC] Recording audio stream...','[NET] Uploading screenshots to remote server','[CRYPT] Encrypting: Documents\\passwords.txt','[FIREWALL] Windows Defender disabled','[NET] Exfiltrating Chrome saved passwords','[DISK] Volume shadow copies deleted','[NET] C2 beacon sent — 14 commands queued','[SCREEN] Capturing display buffer','[KEY] Keylogger active — capturing input'];
+let li=0;const lbox=document.getElementById('litems');
+setInterval(()=>{const el=document.createElement('div');el.className='litem';el.textContent=logs[li++%logs.length];lbox.prepend(el);while(lbox.children.length>5)lbox.removeChild(lbox.lastChild);},650);
 
-// ─── LIVE COUNTERS ───
-setInterval(() => {
-  const el = document.getElementById('reg-count');
-  if (el) el.textContent = parseInt(el.textContent) + Math.floor(Math.random()*3+1);
-}, 1200);
-setInterval(() => {
-  const el = document.getElementById('spread-count');
-  if (el && parseInt(el.textContent) < 47) el.textContent = parseInt(el.textContent) + 1;
-}, 3000);
-let dataMb = 128;
-setInterval(() => {
-  dataMb += Math.floor(Math.random()*8+2);
-  const el = document.getElementById('data-mb');
-  if (el) el.textContent = dataMb;
-}, 1500);
-
-// ─── ENCRYPTION PROGRESS ───
-let pct = 0, filesDone = 0;
-const fillEl   = document.getElementById('progress-bar-fill');
-const pctLbl   = document.getElementById('pct-label');
-const fdoneEl  = document.getElementById('files-done');
-setInterval(() => {
-  pct = Math.min(pct + Math.random()*0.6, 99.9);
-  filesDone += Math.floor(Math.random()*3);
-  fillEl.style.width = pct.toFixed(1)+'%';
-  pctLbl.textContent = pct.toFixed(0)+'%';
-  fdoneEl.textContent = filesDone;
-}, 280);
-
-// ─── FILE LIST ───
-const fakeFiles = [
-  'Documents\\taxes_2024.xlsx','Documents\\passwords.txt','Pictures\\family_photos.zip',
-  'Desktop\\work_project.docx','Documents\\bank_statements.pdf','Downloads\\resume_final.docx',
-  'Desktop\\id_scan.jpg','Documents\\medical_records.pdf','AppData\\Chrome\\Login Data',
-  'Documents\\ssn_info.txt','Desktop\\crypto_wallet.dat','Documents\\contracts_2024.zip',
-  'Pictures\\vacation_2023.zip','Documents\\tax_returns_2022.pdf','Desktop\\budget_2024.xlsx',
-  'Documents\\insurance_docs.pdf','Downloads\\private_photos.zip','AppData\\Roaming\\credentials',
-  'Desktop\\passport_scan.jpg','Documents\\will_and_testament.pdf','AppData\\Discord\\tokens',
-  'Documents\\credit_card_info.txt','Pictures\\personal_2023.zip','Desktop\\recovery_codes.txt',
-];
-let fileCount = 0;
-const fileItems  = document.getElementById('file-items');
-const fileCountEl = document.getElementById('file-count');
-setInterval(() => {
-  if (fileCount >= fakeFiles.length) fileCount = 0;
-  const el = document.createElement('div');
-  el.className = 'file-item';
-  el.textContent = '🔒 C:\\Users\\User\\' + fakeFiles[fileCount++];
-  fileItems.prepend(el);
-  fileCountEl.textContent = fileCount;
-  while (fileItems.children.length > 5) fileItems.removeChild(fileItems.lastChild);
-}, 500);
-
-// ─── ACTIVITY LOG ───
-const logMsgs = [
-  '[lsass.exe] injecting into svchost.exe PID 4812',
-  '[KERNEL] Page fault at 0xFFFFFA8003B2C000',
-  '[NET] Sending 2.4KB to 185.220.101.47:443',
-  '[REG] HKLM\\System\\CurrentControlSet modified',
-  '[DISK] Writing to MBR sector 0',
-  '[CRYPT] AES-256 key generated: 8F3A...',
-  '[lsass.exe] dumping NTLM hashes',
-  '[NET] DNS query intercepted',
-  '[BOOT] Modifying BCD store',
-  '[SHELL] Executing cmd.exe /c rd /s /q C:\\',
-  '[CRYPT] Encrypting: Documents\\passwords.txt',
-  '[FIREWALL] Disabling Windows Defender...',
-  '[REG] Run key persistence established',
-  '[NET] Exfiltrating Chrome passwords',
-  '[CRYPT] Encrypting: AppData\\Roaming\\credentials',
-  '[KERNEL] BSOD trigger armed: 0x0000007E',
-  '[DISK] Shadow copies deleted',
-  '[NET] C2 beacon sent — awaiting commands',
-];
-let logIdx = 0;
-const logItems = document.getElementById('log-items');
-setInterval(() => {
-  const el = document.createElement('div');
-  el.className = 'log-line';
-  el.textContent = logMsgs[logIdx++ % logMsgs.length];
-  logItems.prepend(el);
-  while (logItems.children.length > 5) logItems.removeChild(logItems.lastChild);
-}, 700);
-
-// ─── FLOATING ERRORS ───
-const floatErrors = [
-  ['Microsoft Windows','Windows has detected a hard disk problem.\n\nBack up files immediately.\nError: 0x00000024  NTFS_FILE_SYSTEM'],
-  ['Windows Defender','Threat: Ransom:Win32/Petya.A\nSeverity: SEVERE | Status: Active\nRegistry changes detected.'],
-  ['Drive Health Warning','SMART Failure — WDC WD10EZEX\nFailure imminent. Error: 0x800701E3'],
-  ['System — Critical','Stop: 0x0000007E (0xFFFFFFFFC0000005)\nntoskrnl.exe failed. Dump saved.'],
-  ['Windows Update','Error 0x800f0900 — Update failed.\nChanges being reverted.'],
-  ['Security Alert','Unauthorized access: 185.220.101.47\nFirewall breach: svchost.exe PID 4812'],
-  ['Boot Config Error','File: ntfs.sys\nStatus: 0xc000014c — Volume error.'],
-  ['Application Error','chrome.exe stopped working.\nFault offset: 0x0325c5c4'],
-  ['System32 Alert','hal.dll — Hash mismatch.\nSystem integrity compromised.'],
-  ['Windows Activation','Error 0xC004F074 — Not genuine.\nFiles deleted in 3 days.'],
-  ['Memory Diagnostic','Corruption at 0xFFFFFA8003B2C000\nHardware failure imminent.'],
-  ['Event Viewer','Bugcheck: 0x0000009f\nDump: C:\\Windows\\MEMORY.DMP'],
+// ── floating error popups ──
+const floatErrors=[
+  {title:'Microsoft Windows',bar:'',msg:'Windows has detected a hard disk problem.\n\nBack up files immediately.\nError: 0x00000024  NTFS_FILE_SYSTEM'},
+  {title:'Windows Defender',bar:'red',msg:'Threat: Ransom:Win32/Petya.A\nSeverity: SEVERE | Status: Active\nRegistry changes detected.'},
+  {title:'Drive Health Warning',bar:'orange',msg:'SMART Failure — WDC WD10EZEX\nFailure imminent. Error: 0x800701E3'},
+  {title:'System — Critical',bar:'red',msg:'Stop: 0x0000007E (0xFFFFFFFFC0000005)\nntoskrnl.exe failed. Dump saved.'},
+  {title:'Windows Update',bar:'',msg:'Error 0x800f0900 — Update failed.\nChanges being reverted. Files may be lost.'},
+  {title:'Security Alert',bar:'red',msg:'Unauthorized access from 185.220.101.47\nFirewall breach: svchost.exe PID 4812'},
+  {title:'Windows — Webcam',bar:'dark',msg:'⚠ Your webcam has been accessed by an unknown process.\n\nProcess: chrome.exe (PID 9182)\nStream: being uploaded to remote server'},
+  {title:'Password Manager',bar:'dark',msg:'⚠ 47 saved passwords have been exported.\n\nDestination: 185.220.101.47\nIncluding: Gmail, Bank, Facebook, PayPal'},
+  {title:'Windows — Screenshot',bar:'dark',msg:'Your screen is being recorded.\n\nProcess: svchost.exe is capturing your display\nand transmitting to an external server.'},
+  {title:'Credit Card Alert',bar:'red',msg:'⚠ Payment information detected and extracted.\n\nCard ending in: ****\nTransmitted to: 185.220.101.47:8443'},
+  {title:'Windows Activation',bar:'',msg:'Error 0xC004F074 — Not genuine.\nFiles deleted in 3 days.'},
+  {title:'Memory Diagnostic',bar:'',msg:'Corruption at 0xFFFFFA8003B2C000\nHardware failure imminent.'},
+  {title:'Microsoft Support',bar:'dark',msg:'CALL IMMEDIATELY: 1-800-642-7676\n\nDo not restart your computer.\nA Microsoft technician must assist you now.'},
+  {title:'Windows — Location',bar:'dark',msg:'⚠ Your location is being tracked.\n\nCoordinates transmitted every 30 seconds.\nAccuracy: ±5 meters'},
+  {title:'Disk Error',bar:'red',msg:'winload.exe missing or corrupt.\nStatus: 0xc000000e\nBoot recovery failed.'},
+  {title:'Event Viewer',bar:'',msg:'Bugcheck: 0x0000009f\nDump: C:\\Windows\\MEMORY.DMP\n47 critical events in last 60 seconds.'},
 ];
 
-let floatIdx = 0;
-function spawnFloat() {
-  if (document.getElementById('bsod').style.display === 'block') return;
-  if (document.getElementById('warned').style.display === 'flex') return;
-
-  const [title, msg] = floatErrors[floatIdx++ % floatErrors.length];
-  const div = document.createElement('div');
-  div.className = 'float-error';
-  div.style.left = Math.floor(Math.random() * Math.max(100, innerWidth-390)) + 'px';
-  div.style.top  = Math.floor(40 + Math.random() * Math.max(60, innerHeight-160)) + 'px';
-  div.style.zIndex = 600 + (floatIdx % 200);
-  div.innerHTML = `
-    <div class="float-titlebar">
-      <span>⊞ ${title}</span>
+let floatIdx=0;
+function spawnFloat(){
+  if(document.getElementById('bsod').style.display==='block')return;
+  if(document.getElementById('warned').style.display==='flex')return;
+  if(document.getElementById('restore-screen').style.display==='flex')return;
+  const e=floatErrors[floatIdx++%floatErrors.length];
+  const div=document.createElement('div');div.className='float-error';
+  div.style.left=Math.floor(Math.random()*Math.max(100,innerWidth-390))+'px';
+  div.style.top=Math.floor(40+Math.random()*Math.max(60,innerHeight-160))+'px';
+  div.style.zIndex=600+(floatIdx%200);
+  const barClass=e.bar?` ${e.bar}`:'';
+  div.innerHTML=`
+    <div class="float-titlebar${barClass}">
+      <span>⊞ ${e.title}</span>
       <span style="cursor:pointer;font-size:14px" onclick="this.closest('.float-error').remove();spawnFloat();spawnFloat();">✕</span>
     </div>
-    <div class="float-body">
-      <span class="float-icon">⛔</span>
-      <div class="float-msg" style="overflow:hidden">${msg.replace(/\n/g,'<br>')}</div>
-    </div>
+    <div class="float-msg">${e.msg.replace(/\n/g,'<br>')}</div>
     <div class="float-btns">
-      <button class="float-btn" onclick="this.closest('.float-error').remove();for(let i=0;i<4;i++)setTimeout(spawnFloat,i*100);">OK</button>
-      <button class="float-btn red" onclick="this.closest('.float-error').remove();startBsod();">⚠ FACTORY RESET</button>
+      <button class="float-btn" onclick="this.closest('.float-error').remove();spawnFloat();spawnFloat();spawnFloat();">OK</button>
+      <button class="float-btn red" onclick="this.closest('.float-error').remove();doReset();">⚠ Factory Reset</button>
     </div>`;
   document.body.appendChild(div);
-  // auto-spawn next ones
-  setTimeout(spawnFloat, 300 + Math.random()*500);
+  setTimeout(()=>{ div.remove(); spawnFloat(); spawnFloat(); },12000);
+  setTimeout(spawnFloat,400+Math.random()*600);
 }
-// launch 6 right away
-for (let i = 0; i < 6; i++) setTimeout(spawnFloat, i * 250);
+for(let i=0;i<6;i++) setTimeout(spawnFloat,i*300);
 
-// ─── I WARNED YOU ───
-let warnedFiles=0, warnedReg=0, warnedMb=0;
-function triggerWarned() {
+// ── modal ──
+function showModal(){document.getElementById('modal').style.display='flex';}
+
+// ── RESTORE DATA flow ──
+let restoreJumpscareTimer=null;
+function startRestore(){
+  cdPaused=true;
   document.querySelectorAll('.float-error').forEach(e=>e.remove());
-  const w = document.getElementById('warned');
-  w.style.display = 'flex';
-  scream(); scream();
-  flashScreen('#ff0000', 500);
-
-  const wi = setInterval(() => {
-    warnedFiles += Math.floor(Math.random()*80+20);
-    warnedReg   += Math.floor(Math.random()*30+5);
-    warnedMb    += Math.floor(Math.random()*15+3);
-    document.getElementById('warned-files').textContent = warnedFiles.toLocaleString();
-    document.getElementById('warned-reg').textContent   = warnedReg.toLocaleString();
-    document.getElementById('warned-mb').textContent    = warnedMb.toLocaleString();
-  }, 400);
-
-  // keep screaming
-  let sc = setInterval(() => { scream(); flashScreen('#ff0000',80); shake(200); }, 1800);
-  // store so bsod can clear
-  window._warnedIntervals = [wi, sc];
+  document.getElementById('modal').style.display='none';
+  const rs=document.getElementById('restore-screen');
+  rs.style.display='flex';
+  const bar=document.getElementById('restore-bar');
+  const msg=document.getElementById('restore-msg');
+  const restoreMsgs=['Scanning file system...','Recovering Documents...','Recovering Pictures...','Restoring AppData...','Verifying integrity...','Rebuilding registry...','All files restored!'];
+  let rp=0,rmi=0;
+  const ri=setInterval(()=>{
+    rp+=Math.random()*4+2;
+    if(rp>=100){rp=100;clearInterval(ri);}
+    bar.style.width=rp.toFixed(0)+'%';
+    if(rmi<restoreMsgs.length-1&&rp>rmi*(100/restoreMsgs.length)){msg.textContent=restoreMsgs[rmi++];}
+  },150);
+  // after 8s show "all good" then 10s jumpscare
+  restoreJumpscareTimer=setTimeout(()=>{
+    msg.textContent='✔ All data restored! Your computer is safe.';
+    msg.style.color='#00ff88';
+    msg.style.fontSize='16px';
+    setTimeout(triggerJumpscare,10000);
+  },8000);
 }
 
-// ─── BSOD ───
-function startBsod() {
-  clearInterval(countdown);
+// ── JUMPSCARE ──
+function triggerJumpscare(){
+  document.getElementById('restore-screen').style.display='none';
+  const js=document.getElementById('jumpscare');
+  js.style.display='flex';
+  megaScream();
+  flash('#ffffff',300);
+  const icons=['💀','👻','🔴','☠️','💀'];let ji=0;
+  const jInt=setInterval(()=>{document.getElementById('jumpscare-text').textContent=icons[ji++%icons.length];},120);
+  setTimeout(()=>{
+    clearInterval(jInt);
+    js.style.display='none';
+    // go back to chaos
+    cdPaused=false;
+    for(let i=0;i<10;i++) setTimeout(spawnFloat,i*150);
+    scream();
+  },2500);
+}
+
+// ── I WARNED YOU ──
+let wInt=null;
+function triggerWarned(){
   document.querySelectorAll('.float-error').forEach(e=>e.remove());
-  document.getElementById('warned').style.display = 'none';
-  (window._warnedIntervals||[]).forEach(clearInterval);
+  const w=document.getElementById('warned');w.style.display='flex';
+  megaScream();flash('#ff0000',500);
+  let wf=0,wr=0,wm=0;
+  wInt=setInterval(()=>{
+    wf+=Math.floor(Math.random()*80+20);wr+=Math.floor(Math.random()*25+5);wm+=Math.floor(Math.random()*15+3);
+    document.getElementById('wf').textContent=wf.toLocaleString();
+    document.getElementById('wr').textContent=wr.toLocaleString();
+    document.getElementById('wm').textContent=wm.toLocaleString();
+  },350);
+  const screamLoop=setInterval(()=>{scream();flash('#ff0000',80);},1800);
+  document.getElementById('warned')._screamLoop=screamLoop;
+}
 
-  const bsod = document.getElementById('bsod');
-  bsod.style.display = 'block';
-  scream();
+function continueFromWarned(){
+  clearInterval(wInt);
+  clearInterval(document.getElementById('warned')._screamLoop);
+  document.getElementById('warned').style.display='none';
+  secs=60;timerEl.textContent='01:00';timerEl.style.fontSize='80px';
+  cdPaused=false;
+  for(let i=0;i<8;i++) setTimeout(spawnFloat,i*200);
+}
 
-  const pctEl = document.getElementById('bsod-pct');
-  let p = 0;
-  const bi = setInterval(() => {
-    p = Math.min(p + Math.floor(Math.random()*4)+1, 100);
-    pctEl.textContent = p + '% complete';
-    if (p >= 100) {
+// ── BSOD (longer, shows GOT YOU) ──
+function doReset(){
+  clearInterval(wInt);
+  document.getElementById('modal').style.display='none';
+  document.getElementById('warned').style.display='none';
+  document.querySelectorAll('.float-error').forEach(e=>e.remove());
+  const bsod=document.getElementById('bsod');bsod.style.display='block';
+  megaScream();
+  const pctEl=document.getElementById('bsod-pct');
+  let p=0;
+  // slower — takes about 15 seconds
+  const bi=setInterval(()=>{
+    p=Math.min(p+Math.floor(Math.random()*2)+1,100);
+    pctEl.textContent=p+'% complete';
+    if(p>=100){
       clearInterval(bi);
-      setTimeout(() => {
-        bsod.style.display = 'none';
-        // reboot → fresh panic with 60s left
-        totalSec = 60;
-        timerEl.textContent = '01:00';
-        document.getElementById('warned').style.display = 'none';
-        pct = 0; fillEl.style.width='0%';
-        beepInterval = 600;
+      pctEl.style.display='none';
+      document.getElementById('bsod-sad').style.display='none';
+      document.getElementById('bsod-text').style.display='none';
+      document.getElementById('bsod-code').style.display='none';
+      // GOT YOU
+      const gotcha=document.getElementById('bsod-gotcha');
+      gotcha.style.display='block';
+      beep(880,.1,.4,'sine');beep(1100,.1,.4,'sine');beep(1320,.2,.4,'sine');
+      setTimeout(()=>{
+        gotcha.style.display='none';
+        document.getElementById('bsod-sad').style.display='block';
+        document.getElementById('bsod-text').style.display='block';
+        document.getElementById('bsod-code').style.display='block';
+        pctEl.textContent='0% complete';pctEl.style.display='block';
+        bsod.style.display='none';
+        secs=60;timerEl.textContent='01:00';timerEl.style.fontSize='80px';timerEl.style.color='#ff1111';
+        cdPaused=false;p=0;
+        for(let i=0;i<12;i++) setTimeout(spawnFloat,i*120);
         scream();
-        for (let i=0;i<10;i++) setTimeout(spawnFloat, i*120);
-        const cd2 = setInterval(() => {
-          totalSec--;
-          const m2=String(Math.floor(totalSec/60)).padStart(2,'0');
-          const s2=String(totalSec%60).padStart(2,'0');
-          timerEl.textContent=`${m2}:${s2}`;
-          topTimer.textContent=`⏱ Files deleted in: ${m2}:${s2}`;
-          if (totalSec<=0){clearInterval(cd2);triggerWarned();}
-          if (totalSec<=10){flashScreen('#ff000099',150);shake(200);}
-        },1000);
-      }, 2500);
+      },3500);
     }
-  }, 70);
+  },150);
 }
 </script>
 </body>

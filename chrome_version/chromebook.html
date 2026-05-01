@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Google ChromeOS Security</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Google Sans',Roboto,Arial,sans-serif;background:#fff;overflow:hidden;user-select:none}
+  #overlay{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;transition:background 0.4s}
+  /* ── Phase containers ── */
+  .phase{display:none;width:100%;max-width:640px;padding:32px;text-align:center}
+  .phase.active{display:flex;flex-direction:column;align-items:center}
+
+  /* Google logo bar */
+  #topbar{position:fixed;top:0;left:0;right:0;height:56px;background:#fff;border-bottom:1px solid #e0e0e0;display:flex;align-items:center;padding:0 24px;z-index:10000;gap:8px}
+  #topbar svg{flex-shrink:0}
+  #topbar span{font-size:14px;color:#5f6368;font-weight:500}
+  #statusdot{width:8px;height:8px;border-radius:50%;background:#34a853;margin-left:auto;flex-shrink:0}
+  #statuslabel{font-size:12px;color:#5f6368}
+
+  /* Scan phase */
+  .scan-icon{width:80px;height:80px;border-radius:50%;background:#e8f0fe;display:flex;align-items:center;justify-content:center;margin-bottom:24px;animation:pulse 1.5s ease-in-out infinite}
+  @keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(26,115,232,0.3)}50%{transform:scale(1.05);box-shadow:0 0 0 12px rgba(26,115,232,0)}}
+  .scan-title{font-size:22px;font-weight:500;color:#202124;margin-bottom:8px}
+  .scan-sub{font-size:14px;color:#5f6368;margin-bottom:28px}
+  .progress-wrap{width:100%;background:#e8eaed;border-radius:4px;height:4px;overflow:hidden;margin-bottom:12px}
+  .progress-bar{height:4px;background:#1a73e8;border-radius:4px;width:0%;transition:width 0.08s linear}
+  .progress-label{font-size:12px;color:#80868b}
+  .scan-file{font-size:11px;color:#80868b;margin-top:6px;font-family:monospace;height:16px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:100%}
+
+  /* Alert phase */
+  .alert-banner{width:100%;background:#fce8e6;border:1px solid #f28b82;border-radius:8px;padding:20px 24px;display:flex;align-items:flex-start;gap:16px;margin-bottom:24px;text-align:left}
+  .alert-icon-wrap{flex-shrink:0;width:40px;height:40px;border-radius:50%;background:#ea4335;display:flex;align-items:center;justify-content:center}
+  .alert-title{font-size:16px;font-weight:600;color:#c5221f;margin-bottom:4px}
+  .alert-desc{font-size:13px;color:#642019}
+  .threat-list{width:100%;text-align:left;margin-bottom:20px}
+  .threat-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f1f3f4;font-size:13px;color:#202124}
+  .threat-item:last-child{border-bottom:none}
+  .threat-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;flex-shrink:0}
+  .badge-crit{background:#fce8e6;color:#c5221f}
+  .badge-high{background:#fef7e0;color:#b06000}
+  .threat-name{flex:1;font-family:monospace;font-size:12px;color:#3c4043}
+  .count-box{background:#202124;color:#fff;border-radius:8px;padding:16px 24px;margin-bottom:24px;font-size:28px;font-weight:700;letter-spacing:1px}
+  .count-box span{font-size:13px;font-weight:400;color:#9aa0a6;display:block;margin-top:4px}
+  .btn-primary{background:#1a73e8;color:#fff;border:none;border-radius:4px;padding:10px 28px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;transition:background 0.15s}
+  .btn-primary:hover{background:#1557b0}
+  .btn-secondary{background:transparent;color:#1a73e8;border:1px solid #dadce0;border-radius:4px;padding:10px 28px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;margin-left:8px}
+
+  /* Countdown phase */
+  #countdown-overlay{position:fixed;inset:0;background:#1a73e8;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9998;color:#fff}
+  #countdown-overlay.active{display:flex}
+  .cd-title{font-size:20px;font-weight:500;margin-bottom:8px;opacity:0.9}
+  .cd-num{font-size:96px;font-weight:700;line-height:1;margin-bottom:8px;font-family:monospace}
+  .cd-sub{font-size:14px;opacity:0.75;max-width:360px;text-align:center}
+  .cd-progress{width:280px;height:4px;background:rgba(255,255,255,0.3);border-radius:2px;margin-top:24px;overflow:hidden}
+  .cd-bar{height:4px;background:#fff;border-radius:2px;width:100%;transition:width 1s linear}
+
+  /* Compromised phase */
+  #comp-overlay{position:fixed;inset:0;background:#c5221f;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9997;color:#fff;animation:redflash 0.3s ease-in-out}
+  #comp-overlay.active{display:flex}
+  @keyframes redflash{0%{opacity:0}50%{opacity:1}100%{opacity:1}}
+  .comp-icon{font-size:80px;margin-bottom:16px}
+  .comp-title{font-size:32px;font-weight:700;margin-bottom:8px;text-align:center}
+  .comp-sub{font-size:16px;opacity:0.85;text-align:center;max-width:400px}
+  .comp-code{font-family:monospace;font-size:13px;opacity:0.6;margin-top:24px;background:rgba(0,0,0,0.2);padding:8px 16px;border-radius:4px}
+
+  /* Prank reveal */
+  #reveal-overlay{position:fixed;inset:0;background:#137333;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9996;color:#fff}
+  #reveal-overlay.active{display:flex}
+  .reveal-emoji{font-size:80px;margin-bottom:16px;animation:bounceIn 0.6s cubic-bezier(0.175,0.885,0.32,1.275)}
+  @keyframes bounceIn{0%{transform:scale(0)}100%{transform:scale(1)}}
+  .reveal-title{font-size:40px;font-weight:700;margin-bottom:12px;text-align:center}
+  .reveal-sub{font-size:18px;opacity:0.9;text-align:center;max-width:480px;line-height:1.6;margin-bottom:32px}
+  .reveal-btn{background:#fff;color:#137333;border:none;border-radius:6px;padding:14px 40px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit;transition:transform 0.1s}
+  .reveal-btn:active{transform:scale(0.97)}
+</style>
+</head>
+<body>
+
+<!-- Google-style top bar -->
+<div id="topbar">
+  <!-- Google logo SVG -->
+  <svg width="92" height="30" viewBox="0 0 92 30" xmlns="http://www.w3.org/2000/svg">
+    <path d="M9.06 11.9v2.97h7.11c-.29 1.85-2.1 5.42-7.11 5.42-4.28 0-7.77-3.54-7.77-7.9s3.49-7.9 7.77-7.9c2.44 0 4.07 1.04 5 1.93l3.4-3.27C15.47 1.19 12.56 0 9.06 0 4.06 0 0 4.06 0 12.39c0 8.33 4.06 12.39 9.06 12.39 5.23 0 8.69-3.67 8.69-8.83 0-.59-.06-1.04-.15-1.44H9.06z" fill="#4285f4"/>
+    <path d="M31.1 8.08c-4.18 0-7.57 3.18-7.57 7.57 0 4.35 3.39 7.57 7.57 7.57s7.57-3.22 7.57-7.57c0-4.39-3.39-7.57-7.57-7.57zm0 12.15c-2.29 0-4.28-1.9-4.28-4.58 0-2.72 1.99-4.58 4.28-4.58s4.28 1.85 4.28 4.58c0 2.68-1.99 4.58-4.28 4.58z" fill="#ea4335"/>
+    <path d="M47.3 8.08c-4.18 0-7.57 3.18-7.57 7.57 0 4.35 3.39 7.57 7.57 7.57s7.57-3.22 7.57-7.57c0-4.39-3.39-7.57-7.57-7.57zm0 12.15c-2.29 0-4.28-1.9-4.28-4.58 0-2.72 1.99-4.58 4.28-4.58s4.28 1.85 4.28 4.58c0 2.68-1.99 4.58-4.28 4.58z" fill="#fbbc04"/>
+    <path d="M65.8 8.08c-4.18 0-7.42 3.56-7.42 7.57 0 4.53 3.71 7.57 7.79 7.57 3.34 0 5.27-1.85 6.46-3.49l-2.68-1.78c-.89 1.34-2.1 2.24-3.79 2.24-2.14 0-3.19-1.19-3.79-2.39l10.45-4.33-.51-1.19c-1.03-2.68-3.38-4.2-6.51-4.2zm.15 3c1.45 0 2.54.74 2.98 1.78l-6.97 2.89c-.07-3.05 2.24-4.67 3.99-4.67z" fill="#4285f4"/>
+    <path d="M56.7 23h3.22V1.5H56.7z" fill="#34a853"/>
+    <path d="M76.89 8.59h-.11c-.74-.89-2.19-1.67-3.99-1.67-3.79 0-7.27 3.34-7.27 7.61 0 4.25 3.48 7.54 7.27 7.54 1.81 0 3.26-.78 3.99-1.71h.11v1.08c0 2.91-1.56 4.46-4.06 4.46-2.03 0-3.3-1.45-3.82-2.69l-2.8 1.16c.85 2.02 3.04 4.47 6.62 4.47 3.85 0 7.12-2.27 7.12-7.79V7.4h-3.06v1.19zm-3.82 11.38c-2.29 0-4.2-1.93-4.2-4.58 0-2.65 1.92-4.57 4.2-4.57 2.25 0 4.06 1.93 4.06 4.58 0 2.65-1.81 4.57-4.06 4.57z" fill="#4285f4"/>
+    <path d="M87.6 1.5h3.22V23H87.6z" fill="#34a853"/>
+  </svg>
+  <span>ChromeOS Security</span>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+    <div id="statusdot"></div>
+    <span id="statuslabel">Checking system...</span>
+  </div>
+</div>
+
+<!-- Main overlay (scan phase) -->
+<div id="overlay" style="padding-top:56px">
+  <div id="phase-scan" class="phase active">
+    <div class="scan-icon">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="#1a73e8"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-1 14l-3-3 1.41-1.41L11 12.17l4.59-4.58L17 9l-6 6z"/></svg>
+    </div>
+    <div class="scan-title">Running security scan...</div>
+    <div class="scan-sub" id="scan-sub">ChromeOS is checking your device for threats</div>
+    <div class="progress-wrap"><div class="progress-bar" id="pbar"></div></div>
+    <div class="progress-label" id="pct-label">0%</div>
+    <div class="scan-file" id="scan-file">&nbsp;</div>
+  </div>
+</div>
+
+<!-- Alert phase (injected into overlay) -->
+<div id="phase-alert" class="phase" style="display:none;max-width:640px;padding:40px 32px">
+  <div class="alert-banner">
+    <div class="alert-icon-wrap">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+    </div>
+    <div>
+      <div class="alert-title">Security threats detected on this device</div>
+      <div class="alert-desc">ChromeOS has identified critical security issues that require immediate attention. Your account data may be at risk.</div>
+    </div>
+  </div>
+
+  <div class="count-box">
+    <span id="threat-count-big">4</span> CRITICAL THREATS FOUND
+    <span>ChromeOS Security Scan — just now</span>
+  </div>
+
+  <div class="threat-list">
+    <div class="threat-item"><span class="threat-badge badge-crit">CRITICAL</span><span class="threat-name">/sys/kernel/debug/tracing/events/malware</span></div>
+    <div class="threat-item"><span class="threat-badge badge-crit">CRITICAL</span><span class="threat-name">chrome://suspicious-extension/background.js</span></div>
+    <div class="threat-item"><span class="threat-badge badge-high">HIGH</span><span class="threat-name">/home/chronos/user/.config/spyware.conf</span></div>
+    <div class="threat-item"><span class="threat-badge badge-high">HIGH</span><span class="threat-name">/tmp/.hidden_keylogger_0x4f2a</span></div>
+  </div>
+
+  <div style="display:flex;justify-content:center;gap:8px">
+    <button class="btn-primary" id="btn-reset" onclick="startCountdown()">Reset &amp; Protect Device</button>
+    <button class="btn-secondary" onclick="startCountdown()">Learn more</button>
+  </div>
+</div>
+
+<!-- Countdown overlay -->
+<div id="countdown-overlay">
+  <div class="cd-title">Resetting ChromeOS for protection</div>
+  <div class="cd-num" id="cd-num">10</div>
+  <div class="cd-sub">All data will be wiped and the device will restart. Remove any connected USB drives.</div>
+  <div class="cd-progress"><div class="cd-bar" id="cd-bar"></div></div>
+</div>
+
+<!-- Compromised overlay -->
+<div id="comp-overlay">
+  <div class="comp-icon">⚠️</div>
+  <div class="comp-title">DEVICE COMPROMISED</div>
+  <div class="comp-sub">Security breach detected. ChromeOS has been locked by the system administrator.</div>
+  <div class="comp-code">ERR_DEVICE_COMPROMISED :: 0xC0000094 :: CRITICAL_SECURITY_FAILURE</div>
+</div>
+
+<!-- Prank reveal overlay -->
+<div id="reveal-overlay">
+  <div class="reveal-emoji">😂</div>
+  <div class="reveal-title">GOT YOU!!</div>
+  <div class="reveal-sub">Your Chromebook is totally fine! This was just a prank page. Nothing was deleted, nothing was scanned — it's all fake. lmaoooo 💀</div>
+  <button class="reveal-btn" onclick="document.getElementById('reveal-overlay').classList.remove('active')">ok fine 😭</button>
+</div>
+
+<script>
+// ── Audio (Web Audio API) ──────────────────────────────────────────────────
+var _ac = null;
+function getAC() {
+  if (!_ac) { try { _ac = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){} }
+  return _ac;
+}
+function beep(freq, dur, vol, when) {
+  var ac = getAC(); if (!ac) return;
+  var o = ac.createOscillator(), g = ac.createGain();
+  o.connect(g); g.connect(ac.destination);
+  o.frequency.value = freq;
+  g.gain.setValueAtTime(vol || 0.3, when);
+  g.gain.exponentialRampToValueAtTime(0.001, when + dur);
+  o.start(when); o.stop(when + dur);
+}
+function playAlarm() {
+  var ac = getAC(); if (!ac) return;
+  var t = ac.currentTime;
+  for (var i = 0; i < 6; i++) {
+    beep(880, 0.18, 0.4, t + i*0.22);
+    beep(660, 0.18, 0.35, t + i*0.22 + 0.11);
+  }
+}
+function playCountdownBeep(n) {
+  var ac = getAC(); if (!ac) return;
+  var t = ac.currentTime;
+  if (n > 0) { beep(880, 0.12, 0.5, t); }
+  else { // final
+    beep(220, 0.5, 0.6, t); beep(180, 0.5, 0.5, t+0.1); beep(150, 0.8, 0.5, t+0.2);
+  }
+}
+
+// ── TTS ────────────────────────────────────────────────────────────────────
+function speak(text, rate, pitch) {
+  if (!window.speechSynthesis) return;
+  var u = new SpeechSynthesisUtterance(text);
+  u.rate = rate || 1; u.pitch = pitch || 1; u.volume = 1;
+  window.speechSynthesis.cancel();
+  window.speechSynthesis.speak(u);
+}
+
+// ── Fake scan files ────────────────────────────────────────────────────────
+var SCAN_FILES = [
+  '/sys/kernel/modules', '/etc/cros/recovery_keys', '/home/chronos/user/Downloads',
+  'chrome://extensions/background.js', '/run/daemon/cryptohomed.socket',
+  '/home/user/.config/chrome/Default/Cookies', '/sys/bus/usb/devices',
+  '/var/lib/update_engine/prefs', 'chrome://settings/passwords',
+  '/home/chronos/user/.local/share/keystore', '/proc/net/tcp',
+  'chrome://sync-internals/', '/var/spool/cron/crontabs',
+  '/home/user/GCache/v1/tmp', '/run/cups/cups.sock',
+  '/sys/class/net/eth0/statistics', '/home/chronos/user/GDrive',
+  '/dev/input/event0', '/tmp/metrics.*.tmp', 'chrome://media-internals/',
+  '/var/log/chrome/chrome', '/proc/1/cmdline', '/dev/shm/.hidden_0xa4',
+  '/tmp/.X11-unix/X0', '/home/chronos/user/Documents', '/etc/ssl/certs',
+  'chrome://net-export/', '/run/avahi-daemon/pid', '/sys/kernel/debug/tracing',
+  '/var/cache/device_management/policy.pub', 'chrome://password-manager/'
+];
+
+var scanIdx = 0;
+var threatCount = 0;
+
+// ── Entry: require fullscreen click ───────────────────────────────────────
+var _started = false;
+function startExperience() {
+  if (_started) return; _started = true;
+  document.getElementById('start-gate').style.display = 'none';
+  try { document.documentElement.requestFullscreen(); } catch(e) {}
+  runScan();
+}
+
+// ── Scan phase ─────────────────────────────────────────────────────────────
+function runScan() {
+  var bar = document.getElementById('pbar');
+  var pctLabel = document.getElementById('pct-label');
+  var fileLabel = document.getElementById('scan-file');
+  var sub = document.getElementById('scan-sub');
+  var pct = 0;
+  var totalSteps = SCAN_FILES.length;
+
+  function step() {
+    if (pct >= 100) {
+      pctLabel.textContent = '100%';
+      bar.style.width = '100%';
+      document.getElementById('statusdot').style.background = '#ea4335';
+      document.getElementById('statuslabel').textContent = 'Threats found';
+      sub.textContent = 'Scan complete — issues found';
+      setTimeout(showAlert, 600);
+      return;
+    }
+    var idx = Math.floor(pct / 100 * totalSteps);
+    if (idx < totalSteps) fileLabel.textContent = SCAN_FILES[idx];
+    pct = Math.min(100, pct + (Math.random() * 3.5 + 0.8));
+    bar.style.width = pct + '%';
+    pctLabel.textContent = Math.floor(pct) + '%';
+    setTimeout(step, 60 + Math.random() * 60);
+  }
+  step();
+}
+
+// ── Alert phase ─────────────────────────────────────────────────────────────
+function showAlert() {
+  playAlarm();
+  speak('Warning. Critical security threats have been detected on your Chromebook. Immediate action is required.', 0.9, 0.8);
+  document.getElementById('overlay').style.display = 'none';
+  var ap = document.getElementById('phase-alert');
+  ap.style.display = 'flex';
+  ap.style.position = 'fixed';
+  ap.style.inset = '56px 0 0 0';
+  ap.style.margin = 'auto';
+  ap.style.overflowY = 'auto';
+  ap.style.background = '#fff';
+  ap.style.zIndex = '9999';
+  ap.style.justifyContent = 'flex-start';
+  ap.style.paddingTop = '40px';
+}
+
+// ── Countdown ───────────────────────────────────────────────────────────────
+var cdInterval = null;
+function startCountdown() {
+  document.getElementById('phase-alert').style.display = 'none';
+  var co = document.getElementById('countdown-overlay');
+  co.classList.add('active');
+  var n = 10;
+  var cdNum = document.getElementById('cd-num');
+  var cdBar = document.getElementById('cd-bar');
+  cdBar.style.transition = 'none'; cdBar.style.width = '100%';
+  speak('Resetting device. Ten, nine, eight...', 0.85, 0.7);
+  playCountdownBeep(n);
+
+  cdInterval = setInterval(function() {
+    n--;
+    cdNum.textContent = n;
+    cdBar.style.transition = 'width 0.9s linear';
+    cdBar.style.width = (n / 10 * 100) + '%';
+    playCountdownBeep(n);
+    if (n <= 0) {
+      clearInterval(cdInterval);
+      setTimeout(showCompromised, 400);
+    }
+  }, 1000);
+}
+
+// ── Compromised screen ──────────────────────────────────────────────────────
+function showCompromised() {
+  document.getElementById('countdown-overlay').classList.remove('active');
+  var comp = document.getElementById('comp-overlay');
+  comp.classList.add('active');
+  speak('Device compromised. System locked.', 0.8, 0.6);
+  // Flash effect
+  var flashes = 0;
+  var flashInt = setInterval(function() {
+    comp.style.background = (flashes % 2 === 0) ? '#8b0000' : '#c5221f';
+    flashes++;
+    if (flashes >= 6) { clearInterval(flashInt); comp.style.background = '#c5221f'; }
+  }, 200);
+  setTimeout(showReveal, 3500);
+}
+
+// ── Prank reveal ────────────────────────────────────────────────────────────
+function showReveal() {
+  document.getElementById('comp-overlay').classList.remove('active');
+  document.getElementById('reveal-overlay').classList.add('active');
+  speak('Got you! Your Chromebook is totally fine. This was just a prank. Ha!', 1.1, 1.2);
+}
+
+// ── Start gate (fullscreen requires user gesture) ───────────────────────────
+</script>
+
+<!-- Start gate -->
+<div id="start-gate" style="
+  position:fixed;inset:0;z-index:99999;
+  background:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding-top:56px;
+">
+  <div style="text-align:center;max-width:420px;padding:32px">
+    <!-- Shield icon -->
+    <div style="width:72px;height:72px;border-radius:50%;background:#e8f0fe;display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="#1a73e8"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+    </div>
+    <div style="font-size:20px;font-weight:500;color:#202124;margin-bottom:8px">ChromeOS Security Check</div>
+    <div style="font-size:14px;color:#5f6368;margin-bottom:28px;line-height:1.6">
+      Google requires a routine security verification for this device. Tap below to begin the scan.
+    </div>
+    <button onclick="startExperience()" style="
+      background:#1a73e8;color:#fff;border:none;border-radius:4px;
+      padding:12px 32px;font-size:15px;font-weight:500;cursor:pointer;
+      font-family:inherit;width:100%;
+    ">
+      Start Security Scan
+    </button>
+    <div style="margin-top:12px;font-size:11px;color:#9aa0a6">
+      Google LLC · ChromeOS Security · Required verification
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

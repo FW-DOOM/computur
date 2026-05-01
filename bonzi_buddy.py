@@ -9,7 +9,7 @@ Secret exit  : type 4308
 Restore Bonzi: type 1111  (after right-click Hide)
 """
 import tkinter as tk
-import random, threading, time, base64, io, sys, subprocess, os
+import random, threading, time, base64, io, sys, subprocess, os, tempfile
 import ctypes, ctypes.wintypes
 
 # -- Auto-install Pillow -------------------------------------------------------
@@ -27,18 +27,145 @@ SH = user32.GetSystemMetrics(1)
 # -- Load sprite data ---------------------------------------------------------
 from bonzi_b64 import FRAMES   # dict: int -> base64 str
 
-# -- TTS (Windows SAPI) -------------------------------------------------------
-def speak(text, rate=0):
+# -- Voice config (approximates original Bonzi Buddy L&H TruVoice "Adult Male #2") ----
+# Original Bonzi used Lernout & Hauspie TruVoice -- slightly robotic, medium-high pitch.
+# We replicate it with SSML pitch shift + faster rate on a Windows male SAPI voice.
+VOICE_CFG = {
+    'enabled': True,
+    'rate':    1.18,   # 1.0 = normal, 1.18 ≈ Bonzi's snappy cadence
+    'pitch':   '+28%', # SSML % shift — raises pitch toward that nasally robotic sound
+    'voice':   '',     # '' = auto-pick first male voice
+}
+
+def _get_voices():
+    """Return list of installed SAPI voice names."""
+    try:
+        r = subprocess.run(
+            ["powershell", "-WindowStyle", "Hidden", "-Command",
+             "Add-Type -AssemblyName System.Speech; "
+             "$s=New-Object System.Speech.Synthesis.SpeechSynthesizer; "
+             "$s.GetInstalledVoices()|%{$_.VoiceInfo.Name}"],
+            capture_output=True, text=True, timeout=6, creationflags=subprocess.CREATE_NO_WINDOW)
+        return [v.strip() for v in r.stdout.strip().splitlines() if v.strip()]
+    except:
+        return []
+
+def speak(text, rate=None, pitch=None):
+    """Speak with Bonzi-like SSML voice (higher pitch + slight speed-up)."""
+    if not VOICE_CFG['enabled']: return
+    r = VOICE_CFG['rate']  if rate  is None else rate
+    p = VOICE_CFG['pitch'] if pitch is None else pitch
     def _do():
-        safe = text.replace("'", "").replace('"', '').replace('\n', ' ')
-        ps = (f"Add-Type -AssemblyName System.Speech; "
-              f"$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
-              f"$s.Rate = {rate}; $s.Speak('{safe}');")
+        safe = (text.replace('&','and').replace('<','').replace('>','')
+                    .replace('"','').replace("'",'').replace('\n',' '))
+        # Build SSML
+        voice_tag = (f'<voice name="{VOICE_CFG["voice"]}">' if VOICE_CFG['voice'] else '')
+        voice_end  = ('</voice>' if VOICE_CFG['voice'] else '')
+        ssml = (f'<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">'
+                f'{voice_tag}<prosody pitch="{p}" rate="{r:.2f}">{safe}</prosody>{voice_end}'
+                f'</speak>')
         try:
+            tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.xml',
+                                              delete=False, encoding='utf-8')
+            tmp.write(ssml); tmp.close()
+            fpath = tmp.name.replace('\\', '/')
+            ps = (f"Add-Type -AssemblyName System.Speech; "
+                  f"$s=New-Object System.Speech.Synthesis.SpeechSynthesizer; "
+                  f"if(-not '{VOICE_CFG['voice']}'){{try{{$s.SelectVoiceByHints("
+                  f"[System.Speech.Synthesis.VoiceGender]::Male)}}catch{{}}}}; "
+                  f"$x=[System.IO.File]::ReadAllText('{fpath}'); "
+                  f"$s.SpeakSsml($x); "
+                  f"Remove-Item '{fpath}' -Force -ErrorAction SilentlyContinue")
             subprocess.Popen(["powershell", "-WindowStyle", "Hidden", "-Command", ps],
                              creationflags=subprocess.CREATE_NO_WINDOW)
         except: pass
     threading.Thread(target=_do, daemon=True).start()
+
+def show_voice_settings(parent=None):
+    """Voice settings dialog — pick voice, adjust pitch/rate."""
+    w = tk.Toplevel()
+    w.title('BonziBUDDY Voice Settings')
+    w.resizable(False, False)
+    w.configure(bg='#0d0020')
+    w.attributes('-topmost', True)
+    nw, nh = 480, 360
+    sw = user32.GetSystemMetrics(0); sh = user32.GetSystemMetrics(1)
+    w.geometry(f'{nw}x{nh}+{(sw-nw)//2}+{(sh-nh)//2}')
+
+    tk.Label(w, text='\U0001f98d  BonziBUDDY Voice Settings',
+             font=('Segoe UI',13,'bold'), fg='#cc88ff', bg='#0d0020').pack(pady=(14,4))
+    tk.Label(w, text='Original Bonzi used L&H TruVoice "Adult Male #2".\nWe approximate it with SSML pitch + rate tuning.',
+             font=('Segoe UI',9), fg='#9966ff', bg='#0d0020', justify='center').pack()
+
+    # Enable checkbox
+    en_var = tk.BooleanVar(value=VOICE_CFG['enabled'])
+    ef = tk.Frame(w, bg='#0d0020'); ef.pack(pady=8)
+    tk.Checkbutton(ef, text='Voice enabled', variable=en_var,
+                   font=('Segoe UI',11), fg='#cc88ff', bg='#0d0020',
+                   selectcolor='#2a0044', activebackground='#0d0020',
+                   activeforeground='#cc88ff').pack()
+
+    # Voice picker
+    vf = tk.Frame(w, bg='#0d0020'); vf.pack(padx=20, fill='x')
+    tk.Label(vf, text='Voice:', font=('Segoe UI',10), fg='#cc88ff', bg='#0d0020').grid(row=0,column=0,sticky='w',pady=4)
+    voices = _get_voices()
+    voice_choices = ['(auto — pick male)'] + voices
+    v_var = tk.StringVar(value=VOICE_CFG['voice'] if VOICE_CFG['voice'] in voices else voice_choices[0])
+    om = tk.OptionMenu(vf, v_var, *voice_choices)
+    om.config(font=('Segoe UI',9), bg='#1a0033', fg='white', activebackground='#5500aa',
+              highlightthickness=0, width=34)
+    om['menu'].config(bg='#1a0033', fg='white', activebackground='#5500aa')
+    om.grid(row=0,column=1,sticky='w',padx=8)
+
+    # Pitch slider
+    tk.Label(vf, text='Pitch:', font=('Segoe UI',10), fg='#cc88ff', bg='#0d0020').grid(row=1,column=0,sticky='w',pady=6)
+    pitch_map = [('-20%','Low'),('-10%','Slightly low'),('0%','Normal'),('+15%','Slightly high'),
+                 ('+28%','Bonzi-like ★'),('+40%','High'),('+60%','Very high')]
+    cur_pitch = VOICE_CFG['pitch']
+    p_var = tk.StringVar(value=next((f'{v} — {l}' for v,l in pitch_map if v==cur_pitch), f'{cur_pitch} — custom'))
+    pm = tk.OptionMenu(vf, p_var, *[f'{v} — {l}' for v,l in pitch_map])
+    pm.config(font=('Segoe UI',9), bg='#1a0033', fg='white', activebackground='#5500aa',
+              highlightthickness=0, width=34)
+    pm['menu'].config(bg='#1a0033', fg='white', activebackground='#5500aa')
+    pm.grid(row=1,column=1,sticky='w',padx=8)
+
+    # Rate slider
+    tk.Label(vf, text='Rate:', font=('Segoe UI',10), fg='#cc88ff', bg='#0d0020').grid(row=2,column=0,sticky='w',pady=6)
+    rate_map = [(0.7,'Slow'),(0.9,'Slightly slow'),(1.0,'Normal'),(1.1,'Slightly fast'),
+                (1.18,'Bonzi-like ★'),(1.3,'Fast'),(1.5,'Very fast')]
+    cur_rate = VOICE_CFG['rate']
+    r_var = tk.StringVar(value=next((f'{v} — {l}' for v,l in rate_map if v==cur_rate), f'{cur_rate} — custom'))
+    rm = tk.OptionMenu(vf, r_var, *[f'{v} — {l}' for v,l in rate_map])
+    rm.config(font=('Segoe UI',9), bg='#1a0033', fg='white', activebackground='#5500aa',
+              highlightthickness=0, width=34)
+    rm['menu'].config(bg='#1a0033', fg='white', activebackground='#5500aa')
+    rm.grid(row=2,column=1,sticky='w',padx=8)
+
+    status_lbl = tk.Label(w, text='', font=('Segoe UI',9,'italic'), fg='#ffcc00', bg='#0d0020')
+    status_lbl.pack(pady=4)
+
+    def _apply():
+        VOICE_CFG['enabled'] = en_var.get()
+        sel_v = v_var.get()
+        VOICE_CFG['voice'] = '' if sel_v.startswith('(auto') else sel_v
+        VOICE_CFG['pitch'] = p_var.get().split(' — ')[0]
+        VOICE_CFG['rate']  = float(r_var.get().split(' — ')[0])
+        status_lbl.config(text='Settings applied!')
+    def _test():
+        _apply()
+        speak("Hi there! I'm BonziBUDDY! Your helpful desktop companion!", rate=VOICE_CFG['rate'])
+        status_lbl.config(text='Testing voice...')
+
+    bf = tk.Frame(w, bg='#0d0020'); bf.pack(pady=10)
+    tk.Button(bf, text='🔊 Test Voice', command=_test,
+              font=('Segoe UI',11,'bold'), bg='#5500aa', fg='white',
+              relief='flat', padx=14, pady=6).pack(side='left', padx=6)
+    tk.Button(bf, text='Apply', command=_apply,
+              font=('Segoe UI',11), bg='#330066', fg='white',
+              relief='flat', padx=14, pady=6).pack(side='left', padx=6)
+    tk.Button(bf, text='Close', command=w.destroy,
+              font=('Segoe UI',11), bg='#1a0033', fg='#aaaaaa',
+              relief='flat', padx=14, pady=6).pack(side='left', padx=6)
 
 # -- Constants ----------------------------------------------------------------
 CHROMA  = '#00fe01'
@@ -568,6 +695,7 @@ def build_bonzi():
     menu.add_command(label='\U0001f4c1  Scan my PC...',       command=do_scan)
     menu.add_separator()
     menu.add_command(label='ℹ️   About BonziBUDDY',           command=do_about)
+    menu.add_command(label='\U0001f50a  Voice Settings...',       command=show_voice_settings)
     menu.add_separator()
     menu.add_command(label='❌  Hide  (type 1111 to restore)', command=_hide)
 

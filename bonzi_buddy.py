@@ -59,8 +59,6 @@ def _get_photo(indices):
         _photo_cache[key] = ImageTk.PhotoImage(bg.convert('RGB'))
     return _photo_cache[key]
 
-# Pre-load idle frame at import time so first display is instant
-_get_photo((0,))
 
 # -- Animation sequences ------------------------------------------------------
 # Each entry: (frame_indices_tuple, delay_ms)
@@ -163,28 +161,6 @@ def _ht():
         user32.DispatchMessageW(ctypes.byref(m))
 threading.Thread(target=_ht, daemon=True).start()
 
-# -- Sounds -------------------------------------------------------------------
-def play_pikachu_meme():
-    def _do():
-        ps = (
-            "Add-Type -AssemblyName System.Speech;"
-            "$s=New-Object System.Speech.Synthesis.SpeechSynthesizer;"
-            "foreach($v in $s.GetInstalledVoices()){"
-            "if($v.VoiceInfo.Gender -eq 'Female'){$s.SelectVoice($v.VoiceInfo.Name);break}};"
-            "$s.Rate=9;$s.Volume=100;$s.Speak('Oh my GOD! It s PIKACHU!!!');"
-        )
-        try:
-            subprocess.Popen(["powershell","-WindowStyle","Hidden","-Command",ps],
-                             creationflags=subprocess.CREATE_NO_WINDOW)
-        except: pass
-    threading.Thread(target=_do, daemon=True).start()
-
-def screech():
-    def _do():
-        for _ in range(45): kernel32.Beep(random.randint(300, 2200), 18)
-        for f in [1800,1400,1000,600]: kernel32.Beep(f, 60)
-    threading.Thread(target=_do, daemon=True).start()
-
 # -- Speech bubble ------------------------------------------------------------
 def draw_bubble(c, x1, y1, x2, y2, r=12, fill='white', out='#4A0A99', lw=2, tag='bubble'):
     c.create_rectangle(x1+r, y1, x2-r, y2,   fill=fill, outline='',          tags=tag)
@@ -210,88 +186,6 @@ def update_bubble(c, text):
     c.create_text(mid, (by1+by2)//2, text=text,
                   font=('Segoe UI', 11), fill='#220044',
                   width=CW-36, anchor='center', justify='center', tags='bubble')
-
-# -- Pikachu ------------------------------------------------------------------
-def draw_pikachu(c, cx, cy, r):
-    c.create_oval(cx-r, cy-r*0.94, cx+r, cy+r*0.96, fill='#FFD700', outline='#cc8800', width=4)
-    c.create_polygon(cx-r*.20,cy-r*.80, cx-r*.72,cy-r*1.55, cx-r*.62,cy-r*.72,
-                     fill='#FFD700',outline='#cc8800',width=3)
-    c.create_polygon(cx-r*.30,cy-r*1.15, cx-r*.72,cy-r*1.55, cx-r*.62,cy-r*1.02,
-                     fill='#1a1a1a',outline='')
-    c.create_polygon(cx+r*.20,cy-r*.80, cx+r*.62,cy-r*.72, cx+r*.72,cy-r*1.55,
-                     fill='#FFD700',outline='#cc8800',width=3)
-    c.create_polygon(cx+r*.30,cy-r*1.15, cx+r*.62,cy-r*1.02, cx+r*.72,cy-r*1.55,
-                     fill='#1a1a1a',outline='')
-    ew=r*.19; eh=r*.23
-    c.create_oval(cx-r*.34-ew,cy-r*.22-eh, cx-r*.34+ew,cy-r*.22+eh, fill='#111',outline='')
-    c.create_oval(cx+r*.34-ew,cy-r*.22-eh, cx+r*.34+ew,cy-r*.22+eh, fill='#111',outline='')
-    sr=ew*.4
-    c.create_oval(cx-r*.41-sr,cy-r*.30-sr, cx-r*.41+sr,cy-r*.30+sr, fill='white',outline='')
-    c.create_oval(cx+r*.27-sr,cy-r*.30-sr, cx+r*.27+sr,cy-r*.30+sr, fill='white',outline='')
-    cr2=r*.22
-    c.create_oval(cx-r*.72-cr2,cy+r*.04-cr2, cx-r*.72+cr2,cy+r*.04+cr2, fill='#FF4500',outline='')
-    c.create_oval(cx+r*.72-cr2,cy+r*.04-cr2, cx+r*.72+cr2,cy+r*.04+cr2, fill='#FF4500',outline='')
-    c.create_oval(cx-r*.09,cy+r*.06, cx+r*.09,cy+r*.18, fill='#553300',outline='')
-    mw=r*.29; mh=r*.26
-    c.create_oval(cx-mw,cy+r*.26-mh, cx+mw,cy+r*.26+mh, fill='#331100',outline='#110000',width=2)
-    c.create_oval(cx-mw*.75,cy+r*.26-mh*.68, cx+mw*.75,cy+r*.26+mh*.62, fill='#CC3344',outline='')
-    c.create_oval(cx-mw*.42,cy+r*.26, cx+mw*.42,cy+r*.26+mh*.55, fill='#DD5566',outline='')
-    c.create_arc(cx-r*.5,cy+r*.50, cx+r*.5,cy+r*.95, start=200,extent=140,
-                 style='arc',outline='#cc8800',width=2)
-
-def draw_freddy(c, cx, cy, r):
-    c.create_oval(cx-r,cy-r*1.05, cx+r,cy+r, fill='#150600',outline='#3d1500',width=5)
-    er2=r*.28
-    c.create_oval(cx-r-er2*.5,cy-r*.35-er2, cx-r+er2*.5,cy-r*.35+er2, fill='#220a00',outline='#3d1500',width=3)
-    c.create_oval(cx+r-er2*.5,cy-r*.35-er2, cx+r+er2*.5,cy-r*.35+er2, fill='#220a00',outline='#3d1500',width=3)
-    eye_r=r*.23
-    c.create_oval(cx-r*.42-eye_r,cy-r*.25-eye_r, cx-r*.42+eye_r,cy-r*.25+eye_r, fill='#ffc300',outline='#ff8800',width=3)
-    c.create_oval(cx+r*.42-eye_r,cy-r*.25-eye_r, cx+r*.42+eye_r,cy-r*.25+eye_r, fill='#ffc300',outline='#ff8800',width=3)
-    pr=eye_r*.45
-    c.create_oval(cx-r*.42-pr,cy-r*.25-pr, cx-r*.42+pr,cy-r*.25+pr, fill='#000',outline='')
-    c.create_oval(cx+r*.42-pr,cy-r*.25-pr, cx+r*.42+pr,cy-r*.25+pr, fill='#000',outline='')
-    c.create_rectangle(cx-r*.75,cy-r*.98, cx+r*.75,cy-r*.82, fill='#0a0300',outline='#3d1500',width=3)
-    c.create_rectangle(cx-r*.52,cy-r*1.45, cx+r*.52,cy-r*.9, fill='#0a0300',outline='#3d1500',width=3)
-    c.create_arc(cx-r*.62,cy+r*.05, cx+r*.62,cy+r*.78, start=205,extent=130,
-                 style='chord',fill='#0a0300',outline='#3d1500',width=3)
-    tw=r*.14; ts=cx-r*.45
-    for i in range(5):
-        tx=ts+i*(tw+r*.05)
-        c.create_rectangle(tx,cy+r*.32, tx+tw,cy+r*.6, fill='white',outline='#aaa',width=1)
-
-# -- Jumpscares ---------------------------------------------------------------
-def show_pikachu_scare(on_done=None):
-    def _make():
-        w=tk.Toplevel(); w.overrideredirect(True); w.attributes('-topmost',True)
-        w.geometry(f'{SW}x{SH}+0+0'); w.configure(bg='#FFD700')
-        c2=tk.Canvas(w,width=SW,height=SH,bg='#FFD700',highlightthickness=0); c2.pack()
-        r=min(SW,SH)*.31
-        draw_pikachu(c2,SW//2,SH//2-55,r)
-        c2.create_text(SW//2,SH//2+r+40,text="OH MY GOD IT'S PIKACHU!!",
-                       font=('Impact',max(40,SW//22),'bold'),fill='#cc0000')
-        c2.create_text(SW//2,SH//2+r+100,text='( click to continue )',
-                       font=('Arial',18),fill='#775500')
-        play_pikachu_meme()
-        def _next(): w.destroy(); root.after(400, on_done) if on_done else None
-        w.bind('<Button-1>',lambda e:_next()); w.after(6000,_next)
-    root.after(0,_make)
-
-def show_freddy_scare(on_done=None):
-    def _make():
-        w=tk.Toplevel(); w.overrideredirect(True); w.attributes('-topmost',True)
-        w.geometry(f'{SW}x{SH}+0+0'); w.configure(bg='#000')
-        c2=tk.Canvas(w,width=SW,height=SH,bg='#000',highlightthickness=0); c2.pack()
-        draw_freddy(c2,SW//2,SH//2-35,min(SW,SH)*.34)
-        screech()
-        p=[0]
-        def _p():
-            p[0]+=1; c2.configure(bg='#ff2200' if p[0]%2==0 else '#000')
-            if p[0]<10: w.after(110,_p)
-            else: c2.configure(bg='#000')
-        w.after(80,_p)
-        def _done(): w.destroy(); root.after(400,on_done) if on_done else None
-        w.after(3800,_done)
-    root.after(0,_make)
 
 def show_got_you():
     def _make():
@@ -363,7 +257,7 @@ def open_file_cleaner():
     def on_confirm():
         cb.config(state='disabled',text='Deleting files...')
         sv.set('Removing all infected files...')
-        cw.after(1400,lambda: show_pikachu_scare(on_done=lambda: show_freddy_scare(on_done=show_got_you)))
+        cw.after(1400, show_got_you)
     cb.config(command=on_confirm)
     def _scan():
         random.shuffle(FAKE_FILES); t=[0]

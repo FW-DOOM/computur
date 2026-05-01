@@ -13,33 +13,27 @@
 html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas,monospace;overflow:hidden;color:#fff;user-select:none;}
 #flash{position:fixed;inset:0;pointer-events:none;z-index:8000;opacity:0;background:#ff0000;transition:opacity .05s;}
 
-/* topbar */
 #topbar{position:fixed;top:0;left:0;right:0;background:#cc0000;padding:7px 20px;font-size:13px;font-weight:bold;display:flex;justify-content:space-between;align-items:center;z-index:200;animation:pbar .6s infinite;}
 @keyframes pbar{0%,100%{background:#aa0000}50%{background:#ff0000}}
 
-/* REC badge */
 #rec-badge{position:fixed;top:10px;right:14px;background:#000;border:1px solid #ff2222;border-radius:3px;padding:3px 9px;font-size:11px;color:#ff4444;font-family:Consolas;z-index:300;animation:rec-blink 1s infinite;display:flex;align-items:center;gap:5px;}
 @keyframes rec-blink{0%,100%{opacity:1}50%{opacity:.3}}
 .rec-dot{width:8px;height:8px;background:#ff2222;border-radius:50%;}
 
-/* main */
-#main{width:100%;height:100%;background:radial-gradient(ellipse at center,#0d0005 0%,#000 80%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:38px;padding-bottom:80px;}
+#main{width:100%;height:100%;background:radial-gradient(ellipse at center,#0d0005 0%,#000 80%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:38px;padding-bottom:130px;}
 
-/* countdown */
 #cbox{background:#1a0000;border:2px solid #ff0000;border-radius:8px;padding:14px 40px;text-align:center;margin-bottom:16px;animation:glow 1s infinite;}
 @keyframes glow{0%,100%{box-shadow:0 0 30px #ff000099}50%{box-shadow:0 0 70px #ff0000ee}}
 #clabel{font-size:12px;color:#ff7777;letter-spacing:3px;text-transform:uppercase;}
 #ctimer{font-size:80px;font-weight:bold;color:#ff1111;font-family:Consolas;letter-spacing:8px;line-height:1;}
 #csub{font-size:11px;color:#ff5555;margin-top:4px;}
 
-/* threat */
 #threat{background:#0d0d0d;border:1px solid #330000;border-left:5px solid #ff0000;border-radius:3px;padding:14px 22px;max-width:780px;width:92%;margin-bottom:12px;}
 #ttitle{font-size:15px;font-weight:bold;color:#ff2222;margin-bottom:8px;}
 .tr{display:flex;gap:12px;margin:3px 0;font-size:11px;}
 .tk{color:#666;width:150px;flex-shrink:0;}
 .tv{color:#ffaaaa;}.tv.r{color:#ff3333;font-weight:bold;}.tv.o{color:#ff7700;}
 
-/* panels */
 #panels{display:flex;gap:12px;max-width:780px;width:92%;margin-bottom:12px;}
 .panel{flex:1;background:#080008;border:1px solid #330033;border-radius:3px;padding:10px 14px;font-size:10px;max-height:90px;overflow:hidden;}
 .ptitle{color:#ff3333;font-size:11px;font-weight:bold;margin-bottom:5px;}
@@ -47,32 +41,33 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
 .litem{color:#44ff44;margin:1px 0;font-family:Consolas;animation:fi .2s;}
 @keyframes fi{from{opacity:0;transform:translateX(-6px)}to{opacity:1}}
 
-/* progress */
 #prog{max-width:780px;width:92%;margin-bottom:14px;}
 #plabel{font-size:11px;color:#777;margin-bottom:4px;}
 #pbg{background:#1a0000;border:1px solid #440000;border-radius:2px;height:15px;overflow:hidden;}
 #pfill{height:100%;background:linear-gradient(90deg,#660000,#cc2200,#ff5500);width:0%;transition:width .3s;}
 
-/* factory reset */
 #btnreset{background:#cc0000;color:#fff;border:none;padding:18px 56px;font-size:16px;font-weight:bold;border-radius:4px;cursor:pointer;letter-spacing:1px;animation:bp .5s infinite;text-transform:uppercase;margin-bottom:6px;}
 @keyframes bp{0%,100%{background:#cc0000;transform:scale(1)}50%{background:#ff0000;transform:scale(1.04);box-shadow:0 0 30px #ff0000bb}}
 #hint{font-size:10px;color:#222;margin-top:4px;}
 
-/* ── RESTORE DATA — always on top ── */
+/* ── RESTORE DATA ── big, unmissable, always on top ── */
 #btn-restore{
-  position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
-  background:#005500;color:#fff;border:2px solid #00aa00;
-  padding:14px 50px;font-size:15px;font-weight:bold;
-  border-radius:4px;cursor:pointer;letter-spacing:1px;
-  z-index:99999;text-transform:uppercase;white-space:nowrap;
-  animation:rp 1.2s infinite;
+  position:fixed;bottom:0;left:0;right:0;
+  background:#007700;color:#fff;border:none;border-top:4px solid #00ff00;
+  padding:18px;font-size:20px;font-weight:900;
+  cursor:pointer;letter-spacing:2px;text-transform:uppercase;
+  z-index:99999;width:100%;text-align:center;
+  animation:rp .8s infinite;
 }
-@keyframes rp{0%,100%{background:#005500;border-color:#00aa00}50%{background:#008800;border-color:#00ff00;box-shadow:0 0 22px #00ff0055}}
-#btn-restore:hover{background:#009900;}
+@keyframes rp{
+  0%,100%{background:#005500;border-top-color:#00cc00;font-size:20px;}
+  50%{background:#009900;border-top-color:#00ff44;box-shadow:0 -10px 40px #00ff0066;font-size:21px;}
+}
+#btn-restore:hover{background:#00aa00;}
 
 /* float errors */
-.float-error{position:fixed;background:#fff;border:1px solid #aaa;border-top:3px solid #cc0000;border-radius:0 0 3px 3px;padding:10px 12px;min-width:300px;max-width:380px;font-size:11px;color:#222;z-index:600;box-shadow:2px 2px 8px #00000066;animation:pop-in .15s ease-out;}
-@keyframes pop-in{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:scale(1)}}
+.float-error{position:fixed;background:#fff;border:1px solid #aaa;border-top:3px solid #cc0000;border-radius:0 0 3px 3px;padding:10px 12px;min-width:280px;max-width:360px;font-size:11px;color:#222;z-index:600;box-shadow:2px 2px 8px #00000066;animation:pop-in .12s ease-out;}
+@keyframes pop-in{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
 .float-titlebar{background:#0078d7;color:#fff;font-size:11px;font-weight:bold;margin:-10px -12px 8px -12px;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;}
 .float-titlebar.red{background:#cc0000;}
 .float-titlebar.orange{background:#cc6600;}
@@ -83,24 +78,23 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
 .float-btn:hover{background:#d0d0d0;}
 .float-btn.red{background:#cc0000;color:#fff;border-color:#aa0000;font-weight:bold;}
 .float-btn.red:hover{background:#ff0000;}
-.cam-view{width:100%;height:76px;background:#080808;border:1px solid #333;position:relative;margin:6px 0;}
+.cam-view{width:100%;height:72px;background:#080808;border:1px solid #333;position:relative;margin:6px 0;}
 .cam-rec{position:absolute;top:4px;left:6px;color:#ff2222;font-size:10px;font-family:Consolas;animation:rec-blink 1s infinite;}
 .cam-ts{position:absolute;bottom:4px;right:6px;color:#44ff44;font-size:10px;font-family:Consolas;}
-.cam-outline{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:28px;height:36px;border:1px solid #444;border-radius:50% 50% 40% 40%;background:#111;}
+.cam-outline{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:26px;height:34px;border:1px solid #444;border-radius:50% 50% 40% 40%;background:#111;}
 
-/* modal */
 #modal{display:none;position:fixed;inset:0;background:#000000cc;z-index:9000;align-items:center;justify-content:center;}
 #mbox{background:#0d0d0d;border:1px solid #440000;border-top:6px solid #cc0000;width:520px;padding:24px 30px;border-radius:4px;}
 #mbox h2{color:#ff3333;font-size:15px;margin-bottom:10px;}
 #mbox p{color:#ffaaaa;font-size:11px;line-height:1.7;margin-bottom:16px;text-align:center;}
 #mbtn{width:100%;padding:16px;background:#cc0000;color:#fff;border:none;font-size:14px;font-weight:bold;cursor:pointer;border-radius:3px;animation:bp .5s infinite;}
 
-/* RESTORE screen */
+/* Restore progress */
 #restore-screen{display:none;position:fixed;inset:0;background:#001500;z-index:9800;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
 #restore-screen h2{color:#00ff00;font-size:28px;margin-bottom:20px;}
-#restore-bar-bg{width:420px;max-width:82vw;height:22px;background:#002200;border:1px solid #00aa00;border-radius:3px;overflow:hidden;margin-bottom:12px;}
-#restore-bar{height:100%;background:linear-gradient(90deg,#004400,#00cc00);width:0%;transition:width .25s;}
-#restore-msg{color:#44ff44;font-size:13px;font-family:Consolas;margin-top:6px;}
+#restore-bar-bg{width:440px;max-width:85vw;height:22px;background:#002200;border:1px solid #00aa00;border-radius:3px;overflow:hidden;margin-bottom:12px;}
+#restore-bar{height:100%;background:linear-gradient(90deg,#004400,#00cc00);width:0%;transition:width .22s;}
+#restore-msg{color:#44ff44;font-size:14px;font-family:Consolas;margin-top:6px;}
 #restore-sub{color:#228822;font-size:11px;margin-top:10px;}
 
 /* BSOD */
@@ -116,7 +110,7 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
 /* I WARNED YOU */
 #warned{display:none;position:fixed;inset:0;background:#ff0000;z-index:9990;flex-direction:column;align-items:center;justify-content:center;text-align:center;animation:wflash .45s infinite;}
 @keyframes wflash{0%,100%{background:#ff0000}50%{background:#990000}}
-#warned h1{font-size:clamp(58px,10vw,96px);font-weight:900;color:#fff;font-family:Impact,sans-serif;letter-spacing:8px;animation:wshake .09s infinite;line-height:1;}
+#warned h1{font-size:clamp(56px,10vw,96px);font-weight:900;color:#fff;font-family:Impact,sans-serif;letter-spacing:8px;animation:wshake .09s infinite;}
 @keyframes wshake{0%,100%{transform:translate(0)}25%{transform:translate(-5px,2px)}75%{transform:translate(5px,-2px)}}
 #warned p{font-size:20px;color:#ffaaaa;margin:16px 0 8px;font-weight:bold;}
 #warned-stats{font-size:14px;color:#ffcccc;line-height:2.2;font-family:Consolas;margin-bottom:28px;}
@@ -126,41 +120,55 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
 #btn-warned-continue{background:#006600;color:#fff;border:3px solid #00aa00;padding:18px 50px;font-size:17px;font-weight:900;cursor:pointer;letter-spacing:2px;text-transform:uppercase;}
 #btn-warned-continue:hover{background:#009900;}
 
-/* FREDDY */
+/* ── FREDDY FAZBEAR JUMPSCARE ── */
 #jumpscare{display:none;position:fixed;inset:0;z-index:99999;background:#050000;align-items:center;justify-content:center;}
-.fnaf-wrap{animation:fnaf-rush .13s cubic-bezier(.1,0,.15,1);}
-@keyframes fnaf-rush{from{transform:scale(0.1) translateY(80px);opacity:.5;}to{transform:scale(1);opacity:1;}}
-.fnaf-face{width:290px;height:340px;background:#2a1200;border-radius:44% 44% 34% 34%/38% 38% 44% 44%;position:relative;box-shadow:0 0 90px #ff3300,0 0 180px #aa000044;animation:fnaf-bob .065s infinite;}
-@keyframes fnaf-bob{0%,100%{transform:translate(0,0) rotate(0deg);}25%{transform:translate(-6px,4px) rotate(-2.5deg);}75%{transform:translate(6px,-4px) rotate(2.5deg);}}
-.fnaf-hat{position:absolute;width:165px;height:58px;background:#140700;left:50%;top:-54px;transform:translateX(-50%);border-radius:3px 3px 0 0;}
-.fnaf-brim{position:absolute;width:238px;height:17px;background:#140700;left:50%;top:-17px;transform:translateX(-50%);border-radius:2px;}
-.fnaf-brow{position:absolute;width:72px;height:11px;background:#140700;border-radius:3px;top:63px;}
-.fnaf-brow.L{left:28px;transform:rotate(16deg);}
-.fnaf-brow.R{right:28px;transform:rotate(-16deg);}
-.fnaf-eye{position:absolute;width:84px;height:84px;background:#ffc300;border-radius:50%;top:78px;animation:eye-g .11s infinite;}
-@keyframes eye-g{0%,100%{box-shadow:0 0 22px #ffaa00;}50%{box-shadow:0 0 50px #ffee00,0 0 90px #ff8800;}}
-.fnaf-eye.L{left:28px;}.fnaf-eye.R{right:28px;}
-.fnaf-eye::after{content:'';width:32px;height:32px;background:#000;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
-.fnaf-nose{position:absolute;width:28px;height:19px;background:#cc5522;border-radius:50%;top:162px;left:50%;transform:translateX(-50%);}
-.fnaf-mouth{position:absolute;bottom:18px;left:14px;right:14px;height:114px;background:#000;border-radius:4px 4px 30px 30px;overflow:hidden;display:flex;flex-direction:column;}
+.fnaf-wrap{animation:fnaf-rush .13s cubic-bezier(.08,0,.15,1);}
+@keyframes fnaf-rush{from{transform:scale(.08) translateY(100px);opacity:.4;}to{transform:scale(1);opacity:1;}}
+.fnaf-face{width:320px;height:370px;background:#2a1200;border-radius:44% 44% 34% 34%/38% 38% 44% 44%;position:relative;box-shadow:0 0 100px #ff3300,0 0 200px #880000;animation:fnaf-bob .065s infinite;}
+@keyframes fnaf-bob{0%,100%{transform:translate(0,0) rotate(0deg);}25%{transform:translate(-7px,5px) rotate(-2.5deg);}75%{transform:translate(7px,-5px) rotate(2.5deg);}}
+.fnaf-hat{position:absolute;width:175px;height:62px;background:#140700;left:50%;top:-58px;transform:translateX(-50%);border-radius:3px 3px 0 0;}
+.fnaf-brim{position:absolute;width:248px;height:18px;background:#140700;left:50%;top:-18px;transform:translateX(-50%);border-radius:2px;}
+.fnaf-brow{position:absolute;width:78px;height:13px;background:#140700;border-radius:3px;top:66px;}
+.fnaf-brow.L{left:26px;transform:rotate(18deg);}.fnaf-brow.R{right:26px;transform:rotate(-18deg);}
+.fnaf-eye{position:absolute;width:90px;height:90px;background:#ffc300;border-radius:50%;top:80px;animation:eye-g .11s infinite;}
+@keyframes eye-g{0%,100%{box-shadow:0 0 22px #ffaa00;}50%{box-shadow:0 0 55px #ffee00,0 0 100px #ff8800;}}
+.fnaf-eye.L{left:26px;}.fnaf-eye.R{right:26px;}
+.fnaf-eye::after{content:'';width:34px;height:34px;background:#000;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
+.fnaf-nose{position:absolute;width:30px;height:20px;background:#cc5522;border-radius:50%;top:170px;left:50%;transform:translateX(-50%);}
+.fnaf-mouth{position:absolute;bottom:16px;left:14px;right:14px;height:120px;background:#000;border-radius:4px 4px 32px 32px;overflow:hidden;display:flex;flex-direction:column;}
 .fnaf-tt,.fnaf-tb{display:flex;justify-content:space-around;padding:0 6px;}
 .fnaf-tt{padding-top:3px;}.fnaf-tb{margin-top:auto;padding-bottom:3px;}
-.tu{width:20px;height:46px;background:#f0ede0;border-radius:0 0 5px 5px;}
-.td{width:20px;height:46px;background:#f0ede0;border-radius:5px 5px 0 0;}
-.fnaf-tongue{width:72px;height:26px;background:#bb2233;border-radius:0 0 18px 18px;position:absolute;bottom:24px;left:50%;transform:translateX(-50%);}
+.tu{width:21px;height:50px;background:#f0ede0;border-radius:0 0 5px 5px;}
+.td{width:21px;height:50px;background:#f0ede0;border-radius:5px 5px 0 0;}
+.fnaf-tongue{width:76px;height:28px;background:#bb2233;border-radius:0 0 18px 18px;position:absolute;bottom:24px;left:50%;transform:translateX(-50%);}
 
-/* glitch */
-@keyframes glitch-anim{
-  0%  {clip-path:inset(0 0 88% 0);transform:translate(-5px,0);}
-  20% {clip-path:inset(28% 0 48% 0);transform:translate(5px,0);}
-  40% {clip-path:inset(58% 0 22% 0);transform:translate(-3px,0);}
-  60% {clip-path:inset(78% 0 8% 0); transform:translate(3px,0);}
-  80% {clip-path:inset(12% 0 78% 0);transform:translate(-2px,0);}
-  100%{clip-path:inset(0 0 88% 0); transform:translate(0);}
-}
-.glitch-layer{position:fixed;inset:0;pointer-events:none;z-index:7900;background:rgba(0,255,0,.05);animation:glitch-anim .08s steps(1) 7;}
+/* ── PIKACHU JUMPSCARE ── */
+#pikachu{display:none;position:fixed;inset:0;z-index:99998;background:#FFD700;align-items:center;justify-content:center;flex-direction:column;animation:pika-pop .1s ease-out;}
+@keyframes pika-pop{from{transform:scale(.3);}to{transform:scale(1);}}
+.pika-container{display:flex;flex-direction:column;align-items:center;gap:16px;}
+.pika-face{width:300px;height:280px;background:#FFD700;border-radius:45%;position:relative;border:5px solid #cc9900;box-shadow:0 0 60px #ffff00,0 0 120px #ffaa00;}
+/* ears */
+.pika-ear{position:absolute;width:56px;height:100px;background:#FFD700;border:5px solid #cc9900;top:-88px;border-radius:8px 8px 0 0;}
+.pika-ear.L{left:38px;transform:rotate(-12deg);}.pika-ear.R{right:38px;transform:rotate(12deg);}
+.pika-ear::after{content:'';width:22px;height:65px;background:#1a1a1a;border-radius:5px 5px 0 0;position:absolute;top:10px;left:50%;transform:translateX(-50%);}
+/* eyes - WIDE OPEN shocked */
+.pika-eye{position:absolute;width:52px;height:52px;background:#111;border-radius:50%;top:70px;}
+.pika-eye.L{left:44px;}.pika-eye.R{right:44px;}
+.pika-eye::after{content:'';width:14px;height:14px;background:#fff;border-radius:50%;position:absolute;top:7px;left:7px;}
+/* cheeks */
+.pika-cheek{position:absolute;width:56px;height:38px;background:#ff5555;border-radius:50%;top:126px;opacity:.85;}
+.pika-cheek.L{left:20px;}.pika-cheek.R{right:20px;}
+/* mouth - wide open O shape = surprised */
+.pika-mouth{position:absolute;width:76px;height:60px;background:#111;border-radius:50%;bottom:28px;left:50%;transform:translateX(-50%);}
+.pika-mouth::after{content:'';width:58px;height:45px;background:#ee3355;border-radius:50%;position:absolute;bottom:4px;left:50%;transform:translateX(-50%);}
+/* text */
+.pika-text{font-family:Impact,sans-serif;font-size:clamp(28px,5vw,52px);color:#000;text-shadow:3px 3px 0 #cc9900;letter-spacing:3px;text-align:center;animation:pika-bob .18s infinite;}
+@keyframes pika-bob{0%,100%{transform:scale(1) rotate(-1deg);}50%{transform:scale(1.05) rotate(1deg);}}
 
-/* fs block */
+/* screen glitch */
+@keyframes glitch-anim{0%{clip-path:inset(0 0 88% 0);transform:translate(-5px,0);}20%{clip-path:inset(28% 0 48% 0);transform:translate(5px,0);}40%{clip-path:inset(58% 0 22% 0);transform:translate(-3px,0);}60%{clip-path:inset(78% 0 8% 0);transform:translate(3px,0);}80%{clip-path:inset(12% 0 78% 0);transform:translate(-2px,0);}100%{clip-path:inset(0 0 88% 0);transform:translate(0);}}
+.glitch-layer{position:fixed;inset:0;pointer-events:none;z-index:7900;background:rgba(0,255,0,.04);animation:glitch-anim .08s steps(1) 7;}
+
 #fs-block{display:none;position:fixed;inset:0;background:#000000ee;z-index:9997;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
 #fs-block h1{font-size:34px;color:#ff2222;margin-bottom:14px;}
 #fs-block p{font-size:15px;color:#ff8888;margin-bottom:28px;}
@@ -208,11 +216,13 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
     <div id="pbg"><div id="pfill"></div></div>
   </div>
   <button id="btnreset" onclick="showModal()">⚠ &nbsp;&nbsp; FACTORY RESET &nbsp;—&nbsp; ONLY SAFE OPTION &nbsp;&nbsp; ⚠</button>
-  <div id="hint">contact Microsoft Support: 1-800-642-7676</div>
+  <div id="hint">Microsoft Support: 1-800-642-7676</div>
 </div>
 
-<!-- RESTORE DATA — always on top, can't be blocked -->
-<button id="btn-restore" onclick="startRestore()">✔ &nbsp; RESTORE DATA &nbsp; ✔</button>
+<!-- ── RESTORE DATA — full-width bar at bottom, impossible to miss ── -->
+<button id="btn-restore" onclick="startRestore()">
+  ✔ &nbsp; CLICK HERE TO RESTORE YOUR DATA &nbsp; ✔
+</button>
 
 <!-- factory reset modal -->
 <div id="modal">
@@ -224,7 +234,7 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
   </div>
 </div>
 
-<!-- RESTORE overlay -->
+<!-- RESTORE progress overlay -->
 <div id="restore-screen">
   <h2>✔ &nbsp; Data Restoration In Progress</h2>
   <div id="restore-bar-bg"><div id="restore-bar"></div></div>
@@ -232,7 +242,7 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
   <div id="restore-sub">Please do not close this window</div>
 </div>
 
-<!-- I WARNED YOU -->
+<!-- I WARNED YOU — fires when countdown hits 0:00 -->
 <div id="warned">
   <h1>I WARNED YOU!</h1>
   <p>You ignored every warning. Your files are now permanently destroyed.</p>
@@ -264,25 +274,29 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
 <div id="jumpscare">
   <div class="fnaf-wrap">
     <div class="fnaf-face">
-      <div class="fnaf-hat"></div>
-      <div class="fnaf-brim"></div>
-      <div class="fnaf-brow L"></div>
-      <div class="fnaf-brow R"></div>
-      <div class="fnaf-eye L"></div>
-      <div class="fnaf-eye R"></div>
+      <div class="fnaf-hat"></div><div class="fnaf-brim"></div>
+      <div class="fnaf-brow L"></div><div class="fnaf-brow R"></div>
+      <div class="fnaf-eye L"></div><div class="fnaf-eye R"></div>
       <div class="fnaf-nose"></div>
       <div class="fnaf-mouth">
-        <div class="fnaf-tt">
-          <div class="tu"></div><div class="tu"></div><div class="tu"></div>
-          <div class="tu"></div><div class="tu"></div><div class="tu"></div>
-        </div>
+        <div class="fnaf-tt"><div class="tu"></div><div class="tu"></div><div class="tu"></div><div class="tu"></div><div class="tu"></div><div class="tu"></div></div>
         <div class="fnaf-tongue"></div>
-        <div class="fnaf-tb">
-          <div class="td"></div><div class="td"></div><div class="td"></div>
-          <div class="td"></div><div class="td"></div><div class="td"></div>
-        </div>
+        <div class="fnaf-tb"><div class="td"></div><div class="td"></div><div class="td"></div><div class="td"></div><div class="td"></div><div class="td"></div></div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- PIKACHU JUMPSCARE -->
+<div id="pikachu">
+  <div class="pika-container">
+    <div class="pika-face">
+      <div class="pika-ear L"></div><div class="pika-ear R"></div>
+      <div class="pika-eye L"></div><div class="pika-eye R"></div>
+      <div class="pika-cheek L"></div><div class="pika-cheek R"></div>
+      <div class="pika-mouth"></div>
+    </div>
+    <div class="pika-text">OH MY GOD IT'S PIKACHU! 😱</div>
   </div>
 </div>
 
@@ -294,115 +308,82 @@ html,body{width:100%;height:100%;background:#000;font-family:'Segoe UI',Consolas
 </div>
 
 <script>
-// ── Audio context ──
+// ── Audio ──
 let actx=null;
 function getA(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();return actx;}
-function beep(f,d,v=.15,t='square'){
-  try{const c=getA(),o=c.createOscillator(),g=c.createGain();
-  o.connect(g);g.connect(c.destination);o.frequency.value=f;o.type=t;
-  g.gain.setValueAtTime(v,c.currentTime);
-  g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+d);
-  o.start();o.stop(c.currentTime+d+.05);}catch(e){}
-}
+function beep(f,d,v=.15,t='square'){try{const c=getA(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;o.type=t;g.gain.setValueAtTime(v,c.currentTime);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+d);o.start();o.stop(c.currentTime+d+.05);}catch(e){}}
 function alarm(){beep(1200,.08,.22);setTimeout(()=>beep(800,.08,.22),120);setTimeout(()=>beep(1200,.08,.22),240);}
 function scream(){[300,480,620,800,950,1100,800,500].forEach((f,i)=>setTimeout(()=>beep(f,.18,.28,'sawtooth'),i*60));}
-function megaScream(){
-  for(let i=0;i<14;i++)setTimeout(()=>{
-    beep(150+Math.random()*3200,.22,.45,'sawtooth');
-    beep(80+Math.random()*1200,.3,.35,'square');
-  },i*35);
-  beep(60,.9,.55,'sine');
-}
+function megaScream(){for(let i=0;i<14;i++)setTimeout(()=>{beep(150+Math.random()*3200,.22,.45,'sawtooth');beep(80+Math.random()*1200,.3,.35,'square');},i*35);beep(60,.9,.55,'sine');}
 
-// Freddy screech — white noise + sawtooth tone
+// Freddy screech — white noise burst + screaming tone
 function fnafScreech(){
   try{
-    const c=getA();
-    const sz=Math.floor(c.sampleRate*.9),buf=c.createBuffer(1,sz,c.sampleRate);
-    const dd=buf.getChannelData(0);
+    const c=getA(),sz=Math.floor(c.sampleRate*.9),buf=c.createBuffer(1,sz,c.sampleRate),dd=buf.getChannelData(0);
     for(let i=0;i<sz;i++)dd[i]=(Math.random()*2-1);
     const src=c.createBufferSource();src.buffer=buf;
     const hp=c.createBiquadFilter();hp.type='highpass';hp.frequency.value=1600;
-    const g=c.createGain();
-    g.gain.setValueAtTime(2.2,c.currentTime);
-    g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.9);
-    src.connect(hp);hp.connect(g);g.connect(c.destination);
-    src.start();src.stop(c.currentTime+.9);
-    const o=c.createOscillator(),og=c.createGain();
-    o.connect(og);og.connect(c.destination);
-    o.type='sawtooth';
-    o.frequency.setValueAtTime(700,c.currentTime);
-    o.frequency.linearRampToValueAtTime(2000,c.currentTime+.25);
-    o.frequency.linearRampToValueAtTime(250,c.currentTime+.9);
-    og.gain.setValueAtTime(1.0,c.currentTime);
-    og.gain.exponentialRampToValueAtTime(.001,c.currentTime+.9);
+    const g=c.createGain();g.gain.setValueAtTime(2.2,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.9);
+    src.connect(hp);hp.connect(g);g.connect(c.destination);src.start();src.stop(c.currentTime+.9);
+    const o=c.createOscillator(),og=c.createGain();o.connect(og);og.connect(c.destination);
+    o.type='sawtooth';o.frequency.setValueAtTime(700,c.currentTime);o.frequency.linearRampToValueAtTime(2000,c.currentTime+.25);o.frequency.linearRampToValueAtTime(250,c.currentTime+.9);
+    og.gain.setValueAtTime(1.0,c.currentTime);og.gain.exponentialRampToValueAtTime(.001,c.currentTime+.9);
     o.start();o.stop(c.currentTime+.95);
   }catch(e){}
 }
 
-// Heartbeat background tension
-let hbOn=false;
-function startHeartbeat(){
-  if(hbOn)return;hbOn=true;
-  function beat(){beep(55,.09,.09,'sine');setTimeout(()=>beep(50,.07,.06,'sine'),130);}
-  beat();setInterval(beat,1050);
+// Pikachu sound — ascending "pika" tones
+function pikaSound(){
+  // pika pika PIIIIKAAAA!
+  const pattern=[[700,.07],[0,.05],[800,.07],[0,.05],[700,.07],[0,.05],[800,.07],[0,.05],[1000,.15],[0,.08],[1100,.15],[0,.08],[1200,.25]];
+  let t=0;
+  pattern.forEach(([f,d])=>{
+    if(f===0){t+=d;}else{
+      const delay=t;
+      setTimeout(()=>beep(f,d,.35,'sine'),delay*1000);
+      t+=d;
+    }
+  });
+  // big PIKACHU screech at the end
+  setTimeout(()=>{
+    beep(1400,.1,.5,'sawtooth');beep(1600,.1,.4,'sawtooth');beep(1800,.2,.4,'sawtooth');
+  },1000);
 }
+
+// Heartbeat
+let hbOn=false;
+function startHeartbeat(){if(hbOn)return;hbOn=true;function beat(){beep(55,.09,.09,'sine');setTimeout(()=>beep(50,.07,.06,'sine'),130);}beat();setInterval(beat,1050);}
 
 document.addEventListener('click',()=>{try{getA().resume();startHeartbeat();}catch(e){}},{once:true});
 document.addEventListener('keydown',()=>{try{getA().resume();}catch(e){}},{once:true});
 
-// ── SPEECH SYNTHESIS — funny meme sounds ──
+// ── Speech synthesis (funny meme lines) ──
 const funnyLines=[
-  // Pikachu / meme lines
-  {text:"Oh my god, it's Pikachu!",  rate:1.3, pitch:1.8},
-  {text:"Pika pika pika piiikaaaa!",  rate:1.5, pitch:2.0},
-  // horror announcements
-  {text:"Warning. Your computer has a virus.",  rate:0.75, pitch:0.5},
-  {text:"I can see you through your webcam.",   rate:0.8,  pitch:0.6},
-  {text:"Your files taste delicious.",           rate:0.7,  pitch:0.5},
-  {text:"Goodbye. Forever.",                     rate:0.6,  pitch:0.4},
-  {text:"Help. I am trapped inside your computer.", rate:0.85, pitch:0.55},
-  // funny
-  {text:"Get pranked, nerd.",                    rate:1.1,  pitch:1.0},
-  {text:"Your password is now my password.",     rate:1.0,  pitch:0.9},
-  {text:"Have you tried turning it off and on again?", rate:0.9, pitch:1.0},
-  {text:"This is fine.",                         rate:0.8,  pitch:0.8},
-  {text:"Beep boop. I am definitely not a virus. Beep boop.", rate:0.7, pitch:0.6},
-  {text:"Sending your photos to the internet right now.", rate:0.85, pitch:0.7},
-  {text:"Oh no! Anyway.",                        rate:1.1,  pitch:1.1},
-  {text:"Your data is being uploaded to the dark web.", rate:0.8, pitch:0.6},
-  {text:"Mwahahahaha.",                          rate:0.7,  pitch:0.5},
-  {text:"lol",                                   rate:1.4,  pitch:1.5},
-  {text:"Did you really think that button would help you?", rate:0.9, pitch:0.9},
-  {text:"There is no escape.",                   rate:0.65, pitch:0.4},
-  {text:"I have your credit card number. Mwahaha.", rate:0.8, pitch:0.5},
+  {t:"Oh my god, it's Pikachu!",r:1.4,p:1.9},
+  {t:"Pika pika pika piiikaaaa!",r:1.5,p:2.0},
+  {t:"Warning. Your computer has a virus.",r:0.75,p:0.5},
+  {t:"I can see you through your webcam.",r:0.8,p:0.6},
+  {t:"Your files taste delicious.",r:0.7,p:0.5},
+  {t:"Help. I am trapped inside your computer.",r:0.85,p:0.55},
+  {t:"Get pranked, nerd.",r:1.1,p:1.0},
+  {t:"Your password is now my password.",r:1.0,p:0.9},
+  {t:"Have you tried turning it off and on again?",r:0.9,p:1.0},
+  {t:"Beep boop. I am definitely not a virus. Beep boop.",r:0.7,p:0.6},
+  {t:"Goodbye. Forever.",r:0.6,p:0.4},
+  {t:"Oh no! Anyway.",r:1.1,p:1.1},
+  {t:"There is no escape.",r:0.65,p:0.4},
+  {t:"Mwahahahaha.",r:0.7,p:0.5},
+  {t:"Did you really think that button would help you?",r:0.9,p:0.85},
+  {t:"Sending your photos to the dark web right now.",r:0.85,p:0.7},
 ];
-let speechIdx=Math.floor(Math.random()*funnyLines.length);
-let lastSpeech=Date.now()+20000; // wait 20s before first one
+let spIdx=0,lastSpeech=Date.now()+22000;
+function speak(text,rate=1,pitch=1){try{if(!window.speechSynthesis)return;window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.rate=rate;u.pitch=pitch;u.volume=1;window.speechSynthesis.speak(u);}catch(e){}}
+function sayNext(){const l=funnyLines[spIdx++%funnyLines.length];speak(l.t,l.r,l.p);}
 
-function speak(text,rate=1,pitch=1){
-  try{
-    if(!window.speechSynthesis)return;
-    window.speechSynthesis.cancel();
-    const u=new SpeechSynthesisUtterance(text);
-    u.rate=rate;u.pitch=pitch;u.volume=1.0;
-    window.speechSynthesis.speak(u);
-  }catch(e){}
-}
-function sayNext(){
-  const l=funnyLines[speechIdx++%funnyLines.length];
-  speak(l.text,l.rate,l.pitch);
-}
-
-// ── Flash ──
+// ── Flash / glitch ──
 const flashEl=document.getElementById('flash');
 function flash(c='#ff0000',ms=80){flashEl.style.background=c;flashEl.style.opacity='.65';setTimeout(()=>flashEl.style.opacity='0',ms);}
-
-// ── Glitch ──
-function triggerGlitch(){
-  const g=document.createElement('div');g.className='glitch-layer';
-  document.body.appendChild(g);setTimeout(()=>g.remove(),650);
-}
+function triggerGlitch(){const g=document.createElement('div');g.className='glitch-layer';document.body.appendChild(g);setTimeout(()=>g.remove(),650);}
 setInterval(()=>{if(Math.random()<.65)triggerGlitch();},32000+Math.random()*18000);
 
 // ── Fullscreen ──
@@ -411,10 +392,7 @@ document.addEventListener('DOMContentLoaded',()=>setTimeout(()=>document.documen
 let reFS=false;document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement){document.getElementById('fs-block').style.display='flex';if(!reFS){reFS=true;setTimeout(()=>{document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen().catch(()=>{});reFS=false;},400);}}});
 document.addEventListener('contextmenu',e=>e.preventDefault());
 document.addEventListener('keydown',e=>{if(['F5','F11','Escape'].includes(e.key)||(e.ctrlKey&&['w','r','t','n','l','u'].includes(e.key.toLowerCase())))e.preventDefault();});
-
-// ── Secret exit ──
-let sb='';
-document.addEventListener('keydown',e=>{sb+=e.key;if(sb.length>4)sb=sb.slice(-4);if(sb==='4308'){document.exitFullscreen&&document.exitFullscreen();window.close();}});
+let sb='';document.addEventListener('keydown',e=>{sb+=e.key;if(sb.length>4)sb=sb.slice(-4);if(sb==='4308'){document.exitFullscreen&&document.exitFullscreen();window.close();}});
 
 // ── Countdown 3 min ──
 let secs=180,cdPaused=false;
@@ -433,18 +411,14 @@ const cdInterval=setInterval(()=>{
   if(secs===60) {beepMs=800;timerEl.style.fontSize='90px';scream();speak("Have you tried turning it off and on again?",0.9,1.0);}
   if(secs===30) {beepMs=400;timerEl.style.color='#ff2222';flash('#ff000066',100);speak("There is no escape.",0.65,0.4);}
   if(secs<=10)  {beepMs=200;timerEl.style.fontSize='100px';flash('#ff000099',160);if(secs%2===0)scream();}
-
-  // random funny speech every ~25-45s
-  if(Date.now()-lastSpeech>25000+Math.random()*20000){
-    sayNext();lastSpeech=Date.now();
-  }
+  if(Date.now()-lastSpeech>22000+Math.random()*18000){sayNext();lastSpeech=Date.now();}
 },1000);
 
 // ── Live counters ──
 setInterval(()=>{const e=document.getElementById('regcount');if(e)e.textContent=+e.textContent+Math.floor(Math.random()*4+1);},900);
 setInterval(()=>{const e=document.getElementById('sprcount');if(e&&+e.textContent<99)e.textContent=+e.textContent+1;},2400);
 let dmb=128;setInterval(()=>{dmb+=Math.floor(Math.random()*10+3);const e=document.getElementById('datamb');if(e)e.textContent=dmb;},1200);
-const tbMsgs=['⚠ WINDOWS SECURITY — CRITICAL THREAT ACTIVE','🔴 RANSOMWARE SPREADING — ACT NOW','⛔ DATA EXFILTRATION — 185.220.101.47','💀 SYSTEM INTEGRITY COMPROMISED','🔴 YOUR FILES ARE BEING STOLEN','📷 WEBCAM STREAMING TO HACKER','🎙 MICROPHONE RECORDING — UPLOADING...','🌍 LOCATION BROADCAST ACTIVE'];
+const tbMsgs=['⚠ WINDOWS SECURITY — CRITICAL THREAT ACTIVE','🔴 RANSOMWARE SPREADING — ACT NOW','⛔ DATA EXFILTRATION — 185.220.101.47','💀 SYSTEM INTEGRITY COMPROMISED','🔴 YOUR FILES ARE BEING STOLEN','📷 WEBCAM STREAMING TO HACKER','🎙 MICROPHONE RECORDING — UPLOADING','🌍 LOCATION BROADCAST ACTIVE'];
 let tmi=0;setInterval(()=>{tmi=(tmi+1)%tbMsgs.length;document.getElementById('topbar-msg').textContent=tbMsgs[tmi];},3500);
 
 // ── Encryption progress ──
@@ -452,14 +426,14 @@ let pct=0,fdone=0;const pfill=document.getElementById('pfill');
 setInterval(()=>{pct=Math.min(pct+Math.random()*.7,99.9);fdone+=Math.floor(Math.random()*4+1);pfill.style.width=pct.toFixed(1)+'%';document.getElementById('ppct').textContent=pct.toFixed(0)+'%';document.getElementById('fdone').textContent=fdone;},260);
 
 // ── File list ──
-const fnames=['Documents\\taxes_2024.xlsx','Documents\\passwords.txt','Pictures\\family_photos.zip','Desktop\\work_project.docx','Documents\\bank_statements.pdf','Desktop\\id_scan.jpg','Documents\\medical_records.pdf','AppData\\Chrome\\Login Data','Documents\\ssn_info.txt','Desktop\\crypto_wallet.dat','Documents\\contracts_2024.zip','Documents\\tax_returns_2022.pdf','Downloads\\private_photos.zip','AppData\\Roaming\\credentials','Desktop\\passport_scan.jpg','AppData\\Discord\\tokens','Documents\\credit_card_info.txt','Desktop\\recovery_codes.txt','Videos\\private_video.mp4','AppData\\Firefox\\logins.json'];
+const fnames=['Documents\\taxes_2024.xlsx','Documents\\passwords.txt','Pictures\\family_photos.zip','Desktop\\work_project.docx','Documents\\bank_statements.pdf','Desktop\\id_scan.jpg','Documents\\medical_records.pdf','AppData\\Chrome\\Login Data','Documents\\ssn_info.txt','Desktop\\crypto_wallet.dat','Documents\\contracts_2024.zip','Downloads\\private_photos.zip','AppData\\Discord\\tokens','Documents\\credit_card_info.txt','Desktop\\passport_scan.jpg','Videos\\private_video.mp4','AppData\\Firefox\\logins.json'];
 let fi=0;const fbox=document.getElementById('fitems');
-setInterval(()=>{const el=document.createElement('div');el.className='fitem';el.textContent='🔒 C:\\Users\\User\\'+fnames[fi++%fnames.length];fbox.prepend(el);document.getElementById('fcount').textContent=fi;while(fbox.children.length>5)fbox.removeChild(fbox.lastChild);},450);
+setInterval(()=>{const el=document.createElement('div');el.className='fitem';el.textContent='🔒 C:\\Users\\User\\'+fnames[fi++%fnames.length];fbox.prepend(el);document.getElementById('fcount').textContent=fi;while(fbox.children.length>5)fbox.removeChild(fbox.lastChild);},430);
 
 // ── Activity log ──
-const logs=['[lsass.exe] injecting into svchost.exe PID 4812','[KERNEL] Page fault at 0xFFFFFA8003B2C000','[NET] Sending 4.1KB to 185.220.101.47:443','[REG] HKLM\\System\\CurrentControlSet modified','[DISK] Writing to MBR sector 0','[CAM] Webcam stream opened — uploading live...','[MIC] Recording audio 44100Hz stereo','[NET] Uploading screenshots to remote server','[CRYPT] Encrypting: Documents\\passwords.txt','[FIREWALL] Windows Defender terminated','[NET] Exfiltrating 47 saved passwords','[DISK] Volume shadow copies deleted','[SCREEN] Display buffer captured','[KEY] Keylogger active — 1,284 chars logged','[NET] Email sent to 127 contacts','[GPS] Location broadcast: ±5m accuracy','[PHONE] Linked device also compromised','[BANK] Login attempt: chase.com','[CRYPT] Encrypting: Desktop\\private_photos.zip','[NET] Discord token extracted','[NET] Google session hijacked'];
+const logs=['[lsass.exe] injecting into svchost.exe PID 4812','[KERNEL] Page fault at 0xFFFFFA8003B2C000','[NET] Sending 4.1KB to 185.220.101.47:443','[REG] HKLM\\System\\CurrentControlSet modified','[DISK] Writing to MBR sector 0','[CAM] Webcam stream opened — uploading live...','[MIC] Recording 44100Hz stereo audio','[NET] Uploading screenshots to remote server','[CRYPT] Encrypting: Documents\\passwords.txt','[FIREWALL] Windows Defender terminated','[NET] Exfiltrating 47 saved passwords','[DISK] Volume shadow copies deleted','[SCREEN] Display buffer captured','[KEY] Keylogger — 1,284 chars logged','[NET] Email sent to 127 contacts','[GPS] Location broadcast: ±5m','[PHONE] Linked device compromised','[BANK] Login attempt: chase.com'];
 let li=0;const lbox=document.getElementById('litems');
-setInterval(()=>{const el=document.createElement('div');el.className='litem';el.textContent=logs[li++%logs.length];lbox.prepend(el);while(lbox.children.length>5)lbox.removeChild(lbox.lastChild);},600);
+setInterval(()=>{const el=document.createElement('div');el.className='litem';el.textContent=logs[li++%logs.length];lbox.prepend(el);while(lbox.children.length>5)lbox.removeChild(lbox.lastChild);},580);
 
 // ── Floating error popups ──
 const floatErrors=[
@@ -469,20 +443,24 @@ const floatErrors=[
   {title:'System — Critical',      bar:'red',   msg:'Stop: 0x0000007E (0xFFFFFFFFC0000005)\nntoskrnl.exe failed. Dump saved.'},
   {title:'Windows Update',         bar:'',      msg:'Error 0x800f0900 — Update failed.\nChanges being reverted.'},
   {title:'Security Alert',         bar:'red',   msg:'Unauthorized access from 185.220.101.47\nFirewall breach: svchost.exe PID 4812'},
-  {title:'Webcam Access Detected', bar:'dark',  msg:'⚠ Your webcam is streaming live.\n\nProcess: svchost.exe (PID 7821)\nDestination: 185.220.101.47:4444',cam:true},
-  {title:'Password Export',        bar:'dark',  msg:'⚠ 47 saved passwords exported.\n\nGmail ✓  Bank ✓  Facebook ✓  PayPal ✓\nDestination: 185.220.101.47'},
+  {title:'Webcam Access',          bar:'dark',  msg:'⚠ Your webcam is streaming live.\n\nProcess: svchost.exe → 185.220.101.47:4444',cam:true},
+  {title:'Password Export',        bar:'dark',  msg:'⚠ 47 saved passwords exported.\n\nGmail ✓ Bank ✓ Facebook ✓ PayPal ✓'},
   {title:'Screen Recording',       bar:'dark',  msg:'Your screen is being captured every 3s.\nUploading to remote C2 server.'},
-  {title:'Credit Card Detected',   bar:'red',   msg:'⚠ Payment info extracted from browser.\n\nCard: **** **** **** (detected)\nTransmitted to: 185.220.101.47:8443'},
-  {title:'Microsoft Support',      bar:'dark',  msg:'⚠ CALL IMMEDIATELY: 1-800-642-7676\n\nDo NOT restart. A technician MUST assist now.'},
-  {title:'Location Services',      bar:'dark',  msg:'⚠ Your location is being tracked.\n\nCoordinates sent every 30 seconds.\nAccuracy: ±5 meters'},
-  {title:'Email Breach',           bar:'red',   msg:'⚠ 372 emails sent to ALL your contacts.\n\nSubject: "Click here" — infected link.\nSent from your account at 02:14 AM'},
-  {title:'Google Account',         bar:'red',   msg:'⚠ New sign-in to your Google Account.\n\nDevice: Unknown Windows PC\nLocation: Moscow, Russia — just now'},
-  {title:'iPhone Compromised',     bar:'dark',  msg:'Your linked iPhone has been compromised.\n\nMessages and photos being mirrored.\nApple ID credentials exported.'},
-  {title:'Bank Alert',             bar:'red',   msg:'⚠ Suspicious login to your bank.\n\nIP: 185.220.101.47 (Russia)\nBalance accessed. Contact bank NOW.'},
-  {title:'Discord Token Stolen',   bar:'dark',  msg:'Your Discord token has been exported.\n\nFull access to your account and DMs.'},
-  {title:'Keylogger Active',       bar:'red',   msg:'⚠ Every keystroke is being recorded.\n\n1,284 characters captured including passwords.'},
+  {title:'Credit Card Detected',   bar:'red',   msg:'⚠ Payment info extracted.\nCard **** detected & transmitted.'},
+  {title:'Microsoft Support',      bar:'dark',  msg:'CALL NOW: 1-800-642-7676\nDo NOT restart. A technician must help.'},
+  {title:'Location Tracking',      bar:'dark',  msg:'⚠ Your GPS coordinates are being sent\nevery 30 seconds. Accuracy: ±5 meters.'},
+  {title:'Email Breach',           bar:'red',   msg:'⚠ 372 emails sent to ALL your contacts.\nSubject: "Click here" — infected link.'},
+  {title:'Google Account',         bar:'red',   msg:'⚠ Sign-in from Moscow, Russia\nDevice: Unknown PC — just now.'},
+  {title:'iPhone Compromised',     bar:'dark',  msg:'Your linked iPhone is compromised.\nMessages and photos being mirrored.'},
+  {title:'Bank Alert',             bar:'red',   msg:'⚠ Suspicious bank login.\nIP: 185.220.101.47 — Balance accessed.'},
+  {title:'Discord Token',          bar:'dark',  msg:'Your Discord token has been exported.\nFull access to your account and DMs.'},
+  {title:'Keylogger Active',       bar:'red',   msg:'⚠ Every keystroke is being recorded.\n1,284 characters captured so far.'},
   {title:'Memory Diagnostic',      bar:'',      msg:'Corruption at 0xFFFFFA8003B2C000\nHardware failure imminent.'},
-  {title:'Event Viewer',           bar:'',      msg:'Bugcheck: 0x0000009f\nDump: C:\\Windows\\MEMORY.DMP\n47 critical events in last 60 seconds.'},
+  {title:'Event Viewer',           bar:'',      msg:'Bugcheck: 0x0000009f\nDump: C:\\Windows\\MEMORY.DMP\n47 critical events in 60 seconds.'},
+  {title:'Network Monitor',        bar:'red',   msg:'Data exfiltration in progress.\nUploading 2.4 GB to 185.220.101.47...'},
+  {title:'YouTube History',        bar:'dark',  msg:'⚠ Your watch history has been exported.\nIncluding private and search history.'},
+  {title:'Windows — Activation',   bar:'',      msg:'Error 0xC004F074 — Not activated.\nFiles will be deleted in 3 days.'},
+  {title:'Boot Manager',           bar:'red',   msg:'winload.exe missing or corrupt.\nStatus: 0xc000000e — boot failed.'},
 ];
 
 let floatIdx=0;
@@ -490,98 +468,93 @@ function spawnFloat(){
   if(document.getElementById('bsod').style.display==='block')return;
   if(document.getElementById('warned').style.display==='flex')return;
   if(document.getElementById('jumpscare').style.display==='flex')return;
+  if(document.getElementById('pikachu').style.display==='flex')return;
   if(document.getElementById('restore-screen').style.display==='flex')return;
   const e=floatErrors[floatIdx++%floatErrors.length];
   const div=document.createElement('div');div.className='float-error';
-  div.style.left=Math.floor(Math.random()*Math.max(80,innerWidth-400))+'px';
-  div.style.top =Math.floor(42+Math.random()*Math.max(60,innerHeight-200))+'px';
-  div.style.zIndex=600+(floatIdx%300);
+  // spread across full screen in 6 zones
+  const zone=floatIdx%6;
+  const zw=Math.floor(innerWidth/3),zh=Math.floor((innerHeight-80)/2);
+  const bx=(zone%3)*zw,by=Math.floor(zone/3)*zh+44;
+  div.style.left=Math.floor(bx+Math.random()*Math.max(10,zw-360))+'px';
+  div.style.top =Math.floor(by+Math.random()*Math.max(10,zh-180))+'px';
+  div.style.zIndex=600+(floatIdx%400);
   const bc=e.bar?` ${e.bar}`:'';
   const camHtml=e.cam?`<div class="cam-view"><div class="cam-rec">● REC</div><div class="cam-outline"></div><div class="cam-ts">00:00:00</div></div>`:'';
   div.innerHTML=`
     <div class="float-titlebar${bc}">
       <span>⊞ ${e.title}</span>
-      <span style="cursor:pointer;font-size:14px" onclick="this.closest('.float-error').remove();spawnFloat();spawnFloat();">✕</span>
+      <span style="cursor:pointer;font-size:14px" onclick="this.closest('.float-error').remove();spawnFloat();spawnFloat();spawnFloat();">✕</span>
     </div>
     ${camHtml}
     <div class="float-msg">${e.msg.replace(/\n/g,'<br>')}</div>
     <div class="float-btns">
-      <button class="float-btn" onclick="this.closest('.float-error').remove();spawnFloat();spawnFloat();spawnFloat();">OK</button>
+      <button class="float-btn" onclick="this.closest('.float-error').remove();spawnFloat();spawnFloat();spawnFloat();spawnFloat();">OK</button>
       <button class="float-btn red" onclick="this.closest('.float-error').remove();doReset();">⚠ Factory Reset</button>
     </div>`;
   document.body.appendChild(div);
-  if(e.cam){
-    let s=0;const ts=div.querySelector('.cam-ts');
-    const ci=setInterval(()=>{if(!div.isConnected){clearInterval(ci);return;}s++;ts.textContent=new Date(s*1000).toISOString().substr(11,8);},1000);
-  }
-  setTimeout(()=>{div.remove();spawnFloat();spawnFloat();},10000+Math.random()*5000);
-  setTimeout(spawnFloat,350+Math.random()*500);
+  if(e.cam){let s=0;const ts=div.querySelector('.cam-ts');const ci=setInterval(()=>{if(!div.isConnected){clearInterval(ci);return;}s++;ts.textContent=new Date(s*1000).toISOString().substr(11,8);},1000);}
+  // auto-close fast, spawn 3 more
+  setTimeout(()=>{div.remove();spawnFloat();spawnFloat();spawnFloat();},7000+Math.random()*5000);
+  setTimeout(spawnFloat,250+Math.random()*400);
 }
-for(let i=0;i<7;i++)setTimeout(spawnFloat,i*280);
+// start with 14 popups
+for(let i=0;i<14;i++)setTimeout(spawnFloat,i*200);
 
 // ── Modal ──
 function showModal(){document.getElementById('modal').style.display='flex';}
 
-// ── RESTORE DATA flow → Freddy jumpscare ──
+// ── RESTORE DATA → Freddy jumpscare ──
 function startRestore(){
   cdPaused=true;
   document.querySelectorAll('.float-error').forEach(e=>e.remove());
   document.getElementById('modal').style.display='none';
   document.getElementById('btn-restore').style.display='none';
-  const rs=document.getElementById('restore-screen');
-  rs.style.display='flex';
-
-  // say something hopeful while it "restores"
+  const rs=document.getElementById('restore-screen');rs.style.display='flex';
   setTimeout(()=>speak("Restoring your files. Please wait.",0.85,0.9),1000);
-  setTimeout(()=>speak("Almost done. Your files are being recovered.",0.85,0.9),5000);
-
-  const bar=document.getElementById('restore-bar');
-  const msg=document.getElementById('restore-msg');
-  const sub=document.getElementById('restore-sub');
+  setTimeout(()=>speak("Almost done. Your files are being recovered.",0.85,0.9),5500);
+  const bar=document.getElementById('restore-bar'),msg=document.getElementById('restore-msg'),sub=document.getElementById('restore-sub');
   const steps=['Scanning file system...','Recovering Documents folder...','Recovering Pictures...','Restoring AppData...','Verifying file integrity...','Rebuilding registry...','Finalizing restoration...','✔  All files successfully restored!'];
-  let rp=0,rmi=0;
-  const ri=setInterval(()=>{
-    rp+=Math.random()*3.5+1.5;
-    if(rp>=100){rp=100;clearInterval(ri);}
-    bar.style.width=rp.toFixed(0)+'%';
-    const step=Math.floor(rp/(100/steps.length));
-    if(step<steps.length)msg.textContent=steps[step];
-  },130);
-
-  // after 9s — "all good!" pause, then FREDDY
+  let rp=0;
+  const ri=setInterval(()=>{rp+=Math.random()*3.5+1.5;if(rp>=100){rp=100;clearInterval(ri);}bar.style.width=rp.toFixed(0)+'%';const st=Math.floor(rp/(100/steps.length));if(st<steps.length)msg.textContent=steps[st];},130);
   setTimeout(()=>{
-    msg.textContent='✔  All files successfully restored!';
-    msg.style.color='#00ff88';
-    msg.style.fontSize='16px';
+    msg.textContent='✔  All files successfully restored!';msg.style.color='#00ff88';msg.style.fontSize='16px';
     sub.textContent='Your computer is now safe. You may resume normal use.';
     speak("Your files have been fully restored. Your computer is now safe.",0.85,0.95);
   },9000);
-
-  // 10 seconds of false hope, then WHAM
-  setTimeout(()=>{
-    rs.style.display='none';
-    triggerJumpscare();
-  },19000);
+  // 19 seconds of false hope → FREDDY
+  setTimeout(()=>{rs.style.display='none';triggerJumpscare();},19000);
 }
 
 // ── FREDDY JUMPSCARE ──
 function triggerJumpscare(){
-  const js=document.getElementById('jumpscare');
-  js.style.display='flex';
+  const js=document.getElementById('jumpscare');js.style.display='flex';
   fnafScreech();
-  // after screech settles, say something
-  setTimeout(()=>speak("Did you really think that would work? Mwahahaha.",0.75,0.45),1200);
-  // hold 2.5s then chaos resumes
+  setTimeout(()=>speak("Did you really think that would work? Mwahahaha.",0.7,0.45),1300);
   setTimeout(()=>{
     js.style.display='none';
     document.getElementById('btn-restore').style.display='block';
-    cdPaused=false;
-    beepMs=1000;
-    for(let i=0;i<12;i++)setTimeout(spawnFloat,i*130);
-    scream();
-    speak("Get pranked.",1.2,1.0);
+    cdPaused=false;beepMs=1000;
+    for(let i=0;i<14;i++)setTimeout(spawnFloat,i*120);
+    scream();speak("Get pranked.",1.2,1.0);
   },2500);
 }
+
+// ── PIKACHU JUMPSCARE — fires randomly at 100-160s into session ──
+let pikaDone=false;
+function triggerPikachu(){
+  if(pikaDone||cdPaused)return;pikaDone=true;
+  cdPaused=true;
+  document.querySelectorAll('.float-error').forEach(e=>e.remove());
+  const pk=document.getElementById('pikachu');pk.style.display='flex';
+  pikaSound();
+  setTimeout(()=>speak("Oh my god, it's Pikachu!",1.4,1.9),200);
+  setTimeout(()=>{
+    pk.style.display='none';cdPaused=false;beepMs=1200;
+    for(let i=0;i<12;i++)setTimeout(spawnFloat,i*140);
+  },2200);
+}
+setTimeout(triggerPikachu,100000+Math.random()*60000);
 
 // ── I WARNED YOU — fires when countdown hits 0:00 ──
 let wInt=null;
@@ -592,27 +565,18 @@ function triggerWarned(){
   megaScream();flash('#ff0000',600);
   speak("I warned you. I warned you and you did not listen.",0.65,0.35);
   let wf=0,wr=0,wm=0;
-  wInt=setInterval(()=>{
-    wf+=Math.floor(Math.random()*110+40);
-    wr+=Math.floor(Math.random()*35+10);
-    wm+=Math.floor(Math.random()*22+6);
-    document.getElementById('wf').textContent=wf.toLocaleString();
-    document.getElementById('wr').textContent=wr.toLocaleString();
-    document.getElementById('wm').textContent=wm.toLocaleString();
-  },280);
+  wInt=setInterval(()=>{wf+=Math.floor(Math.random()*110+40);wr+=Math.floor(Math.random()*35+10);wm+=Math.floor(Math.random()*22+6);document.getElementById('wf').textContent=wf.toLocaleString();document.getElementById('wr').textContent=wr.toLocaleString();document.getElementById('wm').textContent=wm.toLocaleString();},280);
   const sl=setInterval(()=>{scream();flash('#ff0000',80);},1500);
   document.getElementById('warned')._sl=sl;
 }
 
 function continueFromWarned(){
-  clearInterval(wInt);
-  clearInterval(document.getElementById('warned')._sl);
+  clearInterval(wInt);clearInterval(document.getElementById('warned')._sl);
   document.getElementById('warned').style.display='none';
   document.getElementById('btn-restore').style.display='block';
-  secs=60;timerEl.textContent='01:00';timerEl.style.fontSize='80px';
-  cdPaused=false;
-  speak("Oh my god, it is Pikachu!",1.3,1.8);
-  for(let i=0;i<10;i++)setTimeout(spawnFloat,i*150);
+  secs=60;timerEl.textContent='01:00';timerEl.style.fontSize='80px';cdPaused=false;
+  speak("Oh my god, it is Pikachu!",1.4,1.9);
+  for(let i=0;i<12;i++)setTimeout(spawnFloat,i*140);
 }
 
 // ── BSOD → GOT YOU ──
@@ -625,33 +589,13 @@ function doReset(){
   const bsod=document.getElementById('bsod');bsod.style.display='block';
   megaScream();
   speak("Your PC has crashed. This is not your fault. Just kidding, it totally is.",0.8,0.6);
-  const pctEl=document.getElementById('bsod-pct');
-  let p=0;
-  const bi=setInterval(()=>{
-    p=Math.min(p+Math.floor(Math.random()*2)+1,100);
-    pctEl.textContent=p+'% complete';
-    if(p>=100){
-      clearInterval(bi);
-      pctEl.style.display='none';
-      document.getElementById('bsod-sad').style.display='none';
-      document.getElementById('bsod-text').style.display='none';
-      document.getElementById('bsod-code').style.display='none';
-      const g=document.getElementById('bsod-gotcha');g.style.display='block';
+  const pctEl=document.getElementById('bsod-pct');let p=0;
+  const bi=setInterval(()=>{p=Math.min(p+Math.floor(Math.random()*2)+1,100);pctEl.textContent=p+'% complete';
+    if(p>=100){clearInterval(bi);pctEl.style.display='none';document.getElementById('bsod-sad').style.display='none';document.getElementById('bsod-text').style.display='none';document.getElementById('bsod-code').style.display='none';
+      const gc=document.getElementById('bsod-gotcha');gc.style.display='block';
       beep(880,.1,.4,'sine');setTimeout(()=>beep(1100,.1,.4,'sine'),120);setTimeout(()=>beep(1320,.25,.4,'sine'),250);
       speak("Got you! Mwahahaha. Get pranked.",1.1,1.0);
-      setTimeout(()=>{
-        g.style.display='none';
-        document.getElementById('bsod-sad').style.display='block';
-        document.getElementById('bsod-text').style.display='block';
-        document.getElementById('bsod-code').style.display='block';
-        pctEl.textContent='0% complete';pctEl.style.display='block';
-        bsod.style.display='none';
-        document.getElementById('btn-restore').style.display='block';
-        secs=60;timerEl.textContent='01:00';timerEl.style.fontSize='80px';timerEl.style.color='#ff1111';
-        cdPaused=false;p=0;
-        for(let i=0;i<14;i++)setTimeout(spawnFloat,i*110);
-        scream();
-      },4000);
+      setTimeout(()=>{gc.style.display='none';document.getElementById('bsod-sad').style.display='block';document.getElementById('bsod-text').style.display='block';document.getElementById('bsod-code').style.display='block';pctEl.textContent='0% complete';pctEl.style.display='block';bsod.style.display='none';document.getElementById('btn-restore').style.display='block';secs=60;timerEl.textContent='01:00';timerEl.style.fontSize='80px';timerEl.style.color='#ff1111';cdPaused=false;p=0;for(let i=0;i<16;i++)setTimeout(spawnFloat,i*100);scream();},4000);
     }
   },150);
 }

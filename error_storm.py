@@ -43,8 +43,8 @@ ERRORS = [
 ]
 
 POPUP_W, POPUP_H = 400, 200
-SPAWN_PER_SEC = 4      # 4 per second — still chaotic, won't freeze PC
-MAX_WINDOWS   = 20     # hard cap so memory doesn't explode
+SPAWN_PER_SEC = 7      # 7 per second — very chaotic, won't freeze PC
+MAX_WINDOWS   = 35     # higher cap — more on screen at once
 open_windows = []
 lock = threading.Lock()
 
@@ -281,9 +281,9 @@ def make_error_window():
         with lock:
             if win in open_windows: open_windows.remove(win)
         win.destroy()
-        # spawn 2-3 more, staggered so they don't all hit at once
-        for i in range(random.randint(2, 3)):
-            root.after(i * 300, make_error_window)
+        # spawn 3-5 more, staggered so they don't all hit at once
+        for i in range(random.randint(3, 5)):
+            root.after(i * 180, make_error_window)
 
     tk.Button(btn_frame, text="OK", command=on_ok, width=8, font=("Segoe UI", 9)).pack(side="left", padx=4)
     tk.Button(btn_frame,
@@ -303,16 +303,17 @@ def make_error_window():
     win.protocol("WM_DELETE_WINDOW", on_x)
     with lock: open_windows.append(win)
 
-    # ── AUTO-CLOSE after 9-14 seconds so the cap never gets permanently full ──
-    auto_delay = random.randint(9000, 14000)
+    # ── AUTO-CLOSE after 5-9 seconds so the cap never gets permanently full ──
+    auto_delay = random.randint(5000, 9000)
     def auto_close():
         try:
             with lock:
                 if win in open_windows: open_windows.remove(win)
             win.destroy()
-            # replace with 2 fresh ones
-            root.after(100, make_error_window)
-            root.after(400, make_error_window)
+            # replace with 3 fresh ones
+            root.after(80,  make_error_window)
+            root.after(250, make_error_window)
+            root.after(450, make_error_window)
         except: pass
     win.after(auto_delay, auto_close)
 

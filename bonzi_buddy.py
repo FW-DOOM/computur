@@ -1,10 +1,9 @@
 """
 bonzi_buddy.py  --  Fake BonziBUDDY desktop companion prank.
 REAL Bonzi Buddy sprites with full animations!
-  * Mouth moves when talking
-  * Arm-raise/gesture animations between lines
-  * Wave animation on greeting
-  * Real eye-blink
+  * Eye blink, arm-raise/gesture, wave animations
+  * Speaks each script line via Windows TTS
+  * Left-click to poke Bonzi, right-click menu
   * Globe and glasses visible (real sprites!)
 Secret exit  : type 4308
 Restore Bonzi: type 1111  (after right-click Hide)
@@ -27,6 +26,19 @@ SH = user32.GetSystemMetrics(1)
 
 # -- Load sprite data ---------------------------------------------------------
 from bonzi_b64 import FRAMES   # dict: int -> base64 str
+
+# -- TTS (Windows SAPI) -------------------------------------------------------
+def speak(text, rate=0):
+    def _do():
+        safe = text.replace("'", "").replace('"', '').replace('\n', ' ')
+        ps = (f"Add-Type -AssemblyName System.Speech; "
+              f"$s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
+              f"$s.Rate = {rate}; $s.Speak('{safe}');")
+        try:
+            subprocess.Popen(["powershell", "-WindowStyle", "Hidden", "-Command", ps],
+                             creationflags=subprocess.CREATE_NO_WINDOW)
+        except: pass
+    threading.Thread(target=_do, daemon=True).start()
 
 # -- Constants ----------------------------------------------------------------
 CHROMA  = '#00fe01'
@@ -73,22 +85,6 @@ ANIM_BLINK = [
     ((0, 27), 120),
     ((0, 26),  80),
     ((0,),     80),
-]
-
-# Mouth cycle overlaid on frame 0 (for talking)
-ANIM_TALK = [
-    ((0, 1), 70),   # closed
-    ((0, 2), 70),   # open wide 1
-    ((0, 5), 70),   # open wide 4
-    ((0, 3), 70),   # open wide 2
-    ((0, 6), 70),   # open medium
-    ((0, 7), 70),   # open narrow
-    ((0, 1), 70),   # closed
-    ((0, 5), 70),   # open wide 4
-    ((0, 2), 70),   # open wide 1
-    ((0, 7), 70),   # open narrow
-    ((0, 6), 70),   # open medium
-    ((0, 1), 70),   # closed
 ]
 
 # Explain gesture  (arm raises, holds pose, comes back down)
@@ -334,6 +330,51 @@ FIXES=[
     'Getting pop-ups?\n→ Run antivirus\n→ Clear browser cache\n→ Or just enjoy the vibes. \U0001f608',
     'Hard drive noisy?\n→ Back up files NOW\n→ Buy replacement\n→ Say goodbye. \U0001f480',
 ]
+FORTUNE_LINES=[
+    'Your future holds... 247 infected files. \U0001f52e',
+    'The stars say: your PC is DOOMED. ⭐',
+    'Fortune: Someone watching your webcam RIGHT NOW. \U0001f4f7',
+    'Prediction: You will close this window. You will fail. \U0001f52e',
+    'The oracle sees: chaos. MORE chaos. Maximum chaos. \U0001f300',
+    'Your destiny: eternal popups. No escape. \U0001f914',
+    'Magic 8-Ball says: DEFINITELY INFECTED. \U0001f3b1',
+    'Prophecy: Your hard drive will die. But not today. Soon.',
+    'The future is unclear... because I ate your RAM. \U0001f914',
+]
+CLICK_RESPONSES=[
+    'Hey! That tickles! \U0001f98d',
+    'Watch it! I bite! \U0001f608',
+    'Personal space, please! \U0001f62e',
+    'You found me! Congrats! \U0001f389',
+    'Ow! That was my arm!',
+    'Do that again and I\'ll crash your PC. \U0001f60f',
+    'Hmm? What do you want?',
+    'I\'m busy scanning your files. \U0001f440',
+    'Did you really just click me? \U0001f612',
+    '\U0001f98d BONZI!',
+    'I am not a button. \U0001f610',
+    'Nice click. 10/10. Try again. \U0001f602',
+    'Boop! \U0001f447',
+    'STOP POKING ME \U0001f621',
+    'I felt that in my hard drive.',
+]
+IDLE_QUOTES=[
+    'Psst... I can see your screen. \U0001f440',
+    'Still here! \U0001f98d',
+    'Scanning... \U0001f50d',
+    '*gorilla noises*',
+    'Have you backed up lately? \U0001f914',
+    'Your RAM usage looks... suspicious.',
+    'I found something in your temp folder. \U0001f4c1',
+    'Boo. \U0001f47b',
+    'Did you know I never sleep? \U0001f634',
+    'Your CPU just coughed. \U0001f927',
+    'Windows XP wants you back.',
+    'I can hear your fan from here.',
+    'Nice wallpaper. Very... revealing. \U0001f440',
+    'Error 404: your privacy. Not found.',
+    'Your task manager is afraid of me. \U0001f60f',
+]
 ABOUT_LINES=[
     'BonziBUDDY v4.2\nYour trusted desktop companion!\n© Totally Not Spyware Inc. 1999-Forever \U0001f98d',
     'I can tell jokes, share facts,\nfix your computer, and\ndefinitely NOT read your files. \U0001f607',
@@ -347,13 +388,13 @@ DODGE_LINES=[
 ]
 SCRIPT=[
     ('Hi there! I\'m BonziBUDDY! \U0001f44b',             2600, 'wave'),
-    ('Your helpful desktop companion!',                    2400, 'talk'),
+    ('Your helpful desktop companion!',                    2400, 'gesture'),
     ('I know EVERYTHING about your computer.',             2600, 'gesture'),
-    ('Right-click me for facts, jokes, and more!',         3000, 'talk'),
+    ('Right-click me for facts, jokes, and more!',         3000, 'gesture'),
     ('I\'ve been scanning your PC...',                     2800, 'gesture'),
-    ('And I found something VERY concerning. \U0001f631',  2600, 'talk'),
+    ('And I found something VERY concerning. \U0001f631',  2600, 'gesture'),
     ('247 INFECTED FILES on your system!',                 2800, 'gesture'),
-    ('Don\'t worry! I can clean it all up for you!',       2600, 'talk'),
+    ('Don\'t worry! I can clean it all up for you!',       2600, 'gesture'),
     ('Just click the DELETE button below!',                2400, 'gesture'),
 ]
 
@@ -410,30 +451,79 @@ def build_bonzi():
     def _start_idle():
         if not main.winfo_exists(): return
         c.itemconfig(img_item, image=_get_photo((0,)))
-        delay = random.randint(3000, 6000)
+        # Idle action every 5-9 seconds (less frequent)
+        delay = random.randint(5000, 9000)
         _anim['aid'] = main.after(delay, _do_idle_action)
 
     def _do_idle_action():
         if not main.winfo_exists(): return
         roll = random.random()
-        if roll < 0.45:
+        if roll < 0.55:
+            # Mostly just blink
+            _play(ANIM_BLINK, done=_start_idle)
+        elif roll < 0.78:
+            # Occasional gesture
+            _play(ANIM_GESTURE, done=_start_idle)
+        else:
+            # Rare wave
+            _play(ANIM_WAVE, done=_start_idle)
+
+    # Random idle quote (occasionally Bonzi says something unprompted)
+    _idle_quote_active = [False]
+    def _schedule_idle_quote():
+        if not main.winfo_exists(): return
+        delay = random.randint(25000, 55000)  # every 25-55 seconds
+        main.after(delay, _do_idle_quote)
+
+    def _do_idle_quote():
+        if not main.winfo_exists(): return
+        _idle_quote_active[0] = True
+        msg = random.choice(IDLE_QUOTES)
+        update_bubble(c, msg)
+        speak(msg, rate=1)
+        _play(ANIM_GESTURE, done=lambda: _end_idle_quote(msg))
+
+    def _end_idle_quote(msg):
+        if not main.winfo_exists(): return
+        _idle_quote_active[0] = False
+        main.after(2500, lambda: (update_bubble(c, '') if main.winfo_exists() else None))
+        _start_idle()
+        _schedule_idle_quote()
+
+    # start idle + first idle quote
+    main.after(500, _start_idle)
+    main.after(30000, _do_idle_quote)
+
+    # -- Drag -------------------------------------------------------------------
+    drag = {'x':0,'y':0,'on':False,'moved':False}
+    def _press(e):
+        drag['x']=e.x_root; drag['y']=e.y_root
+        drag['on']=True; drag['moved']=False
+    def _move(e):
+        if not drag['on']: return
+        dx=abs(e.x_root-drag['x']); dy=abs(e.y_root-drag['y'])
+        if dx>5 or dy>5: drag['moved']=True
+        main.geometry(f'+{main.winfo_x()+e.x_root-drag["x"]}+{main.winfo_y()+e.y_root-drag["y"]}')
+        drag['x']=e.x_root; drag['y']=e.y_root
+    def _rel(e):
+        drag['on']=False
+        if not drag['moved']:
+            # It was a click, not a drag -- Bonzi reacts!
+            _on_poke()
+
+    def _on_poke():
+        if not main.winfo_exists(): return
+        msg = random.choice(CLICK_RESPONSES)
+        update_bubble(c, msg)
+        speak(msg, rate=2)
+        roll = random.random()
+        if roll < 0.4:
             _play(ANIM_BLINK, done=_start_idle)
         elif roll < 0.75:
             _play(ANIM_GESTURE, done=_start_idle)
         else:
             _play(ANIM_WAVE, done=_start_idle)
 
-    # start idle
-    main.after(500, _start_idle)
-
-    # -- Drag -------------------------------------------------------------------
-    drag = {'x':0,'y':0,'on':False}
-    def _press(e):   drag['x']=e.x_root; drag['y']=e.y_root; drag['on']=True
-    def _move(e):
-        if not drag['on']: return
-        main.geometry(f'+{main.winfo_x()+e.x_root-drag["x"]}+{main.winfo_y()+e.y_root-drag["y"]}')
-        drag['x']=e.x_root; drag['y']=e.y_root
-    def _rel(e): drag['on']=False
     c.bind('<Button-1>',_press); c.bind('<B1-Motion>',_move); c.bind('<ButtonRelease-1>',_rel)
 
     # -- Right-click menu -------------------------------------------------------
@@ -452,16 +542,32 @@ def build_bonzi():
         update_bubble(c, random.choice(JOKES)); _play(ANIM_WAVE, done=_start_idle)
     def do_fix():
         update_bubble(c, random.choice(FIXES)); _play(ANIM_EXPLAIN, done=_start_idle)
+    def do_fortune():
+        fortune = random.choice(FORTUNE_LINES)
+        update_bubble(c, fortune)
+        speak(fortune, rate=0)
+        _play(ANIM_EXPLAIN, done=_start_idle)
+    def do_wave():
+        update_bubble(c, 'HEYYYY!! \U0001f44b\U0001f98d')
+        speak('Hey hey hey!', rate=1)
+        _play(ANIM_WAVE, done=_start_idle)
+    def do_scan():
+        update_bubble(c, 'Opening BonziBUDDY File Cleaner...\nStand by! \U0001f60a')
+        main.after(800, open_file_cleaner)
     def do_about():
         update_bubble(c, random.choice(ABOUT_LINES)); _play(ANIM_GESTURE, done=_start_idle)
     def _hide(): main.withdraw()
 
     menu.add_command(label='\U0001f4ac  Tell me a fact!',     command=do_fact)
-    menu.add_command(label='❓  Ask me a question!',       command=do_trivia)
+    menu.add_command(label='❓  Trivia!',                     command=do_trivia)
     menu.add_command(label='\U0001f602  Tell me a joke!',     command=do_joke)
     menu.add_command(label='\U0001f527  Fix my computer!',    command=do_fix)
+    menu.add_command(label='\U0001f52e  Tell my fortune!',    command=do_fortune)
+    menu.add_command(label='\U0001f44b  Wave!',               command=do_wave)
     menu.add_separator()
-    menu.add_command(label='ℹ️   About BonziBUDDY',  command=do_about)
+    menu.add_command(label='\U0001f4c1  Scan my PC...',       command=do_scan)
+    menu.add_separator()
+    menu.add_command(label='ℹ️   About BonziBUDDY',           command=do_about)
     menu.add_separator()
     menu.add_command(label='❌  Hide  (type 1111 to restore)', command=_hide)
 
@@ -469,20 +575,6 @@ def build_bonzi():
         try: menu.tk_popup(e.x_root,e.y_root)
         finally: menu.grab_release()
     c.bind('<Button-3>',_rc)
-
-    # -- Auto-wander -----------------------------------------------------------
-    wander_on=[False]
-    def _wander():
-        if not main.winfo_exists() or not wander_on[0]: return
-        tx=random.randint(40,max(41,SW-CW-40)); ty=random.randint(40,max(41,SH-CH-40))
-        ox,oy=main.winfo_x(),main.winfo_y(); steps=55
-        def _step(s=0):
-            if s>=steps or not main.winfo_exists() or drag['on']: return
-            t=s/steps; ease=t*t*(3-2*t)
-            try: main.geometry(f'+{int(ox+(tx-ox)*ease)}+{int(oy+(ty-oy)*ease)}')
-            except: return
-            main.after(20,lambda: _step(s+1))
-        _step(); main.after(random.randint(7000,14000),_wander)
 
     # -- DELETE button ---------------------------------------------------------
     del_btn=tk.Button(main,text='  \U0001f5d1  DELETE VIRUSES  ',
@@ -500,7 +592,7 @@ def build_bonzi():
             c.coords(del_item,CW//2,CH-30)
             del_btn.config(command=_on_click,bg='#880000',text='  \U0001f5d1  DELETE VIRUSES  <- NOW  ')
             update_bubble(c,'...ok fine. You win.\nClick it. I dare you. \U0001f612')
-            _play(ANIM_EXPLAIN, done=lambda: (wander_on.__setitem__(0,True), main.after(3000,_wander)))
+            _play(ANIM_EXPLAIN, done=_start_idle)
             return
         c.coords(del_item,random.randint(40,CW-100),random.randint(CH-95,CH-15))
         update_bubble(c,random.choice(DODGE_LINES))
@@ -523,10 +615,12 @@ def build_bonzi():
         if idx>=len(SCRIPT):
             phase[0]='dodge'; c.itemconfig(del_item,state='normal')
             update_bubble(c,'\U0001f446 Click that DELETE button!\nI\'ll clean EVERYTHING up!')
+            speak('Click that DELETE button! I will clean everything up!', rate=0)
             _play(ANIM_WAVE, done=_start_idle)
             return
         text,delay,anim_hint=SCRIPT[idx]
         update_bubble(c,text)
+        speak(text, rate=0)
         script_idx[0]+=1
 
         # Play matching animation
@@ -534,12 +628,12 @@ def build_bonzi():
             anim_seq=ANIM_WAVE
         elif anim_hint=='gesture':
             anim_seq=ANIM_GESTURE
-        else:  # 'talk'
-            anim_seq=ANIM_TALK
+        else:
+            anim_seq=ANIM_GESTURE
 
         def _after_anim():
             if main.winfo_exists():
-                main.after(max(0, delay - len(anim_seq)*80), _next_line)
+                main.after(max(0, delay - len(anim_seq)*90), _next_line)
 
         _play(anim_seq, done=_after_anim)
 

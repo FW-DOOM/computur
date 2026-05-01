@@ -1,11 +1,12 @@
 """
 window_chaos.py — TROLLER 5000.
 Real Windows error dialogs, mouse hijacking, fake BSOD, screen flash,
-fake notifications, app spam, window mayhem, emoji bombs, creepy TTS.
+fake notifications, app spam, window mayhem, emoji bombs, creepy TTS,
+Q&A popup, fake search history overlay, browser searches, FINAL BOSS mode.
 Secret exit: type 4308.
 """
 import ctypes, ctypes.wintypes, random, time, threading
-import tkinter as tk, os, subprocess, math, tempfile
+import tkinter as tk, os, subprocess, math, tempfile, webbrowser
 
 user32   = ctypes.windll.user32
 kernel32 = ctypes.windll.kernel32
@@ -70,7 +71,7 @@ TTS_LINES = [
     "But you won't.",
     "I have your files.",
     "Your passwords are mine.",
-    "Interesting search history.",
+    "Interesting search history.",   # <-- triggers URL overlay
     "Have you said hello to your webcam today?",
     "I found something in your downloads folder.",
     "You really should have used private browsing.",
@@ -83,6 +84,252 @@ TTS_LINES = [
     "I have sent your browser history to your contacts.",
     "Forty seven threats. Forty seven.",
 ]
+
+# Fake "search history" URLs to flash on screen when that TTS line plays
+FAKE_SEARCH_URLS = [
+    "google.com/search?q=how+to+delete+someone+from+your+life",
+    "google.com/search?q=is+it+normal+to+talk+to+your+computer",
+    "google.com/search?q=why+does+my+keyboard+smell+like+chips",
+    "google.com/search?q=can+bonzi+buddy+see+me",
+    "bing.com/search?q=how+to+stop+being+embarrassed+at+age+23",
+    "google.com/search?q=my+cat+judging+me+what+does+it+mean",
+    "google.com/search?q=is+windows+xp+still+supported+2024",
+    "youtube.com/watch?v=dQw4w9WgXcQ (watched+47+times)",
+    "google.com/search?q=how+to+uninstall+someone+from+your+house",
+    "google.com/search?q=why+does+everyone+leave+me+except+bonzibuddy",
+    "google.com/search?q=can+a+gorilla+be+your+best+friend",
+    "google.com/search?q=accidentally+googled+something+embarrassing",
+]
+
+# Funny (safe, annoying) Google searches to actually open
+FUNNY_SEARCHES = [
+    "https://www.google.com/search?q=why+is+my+computer+running+so+slow",
+    "https://www.google.com/search?q=how+to+get+rid+of+bonzi+buddy",
+    "https://www.google.com/search?q=bonzi+buddy+is+he+still+alive",
+    "https://www.google.com/search?q=is+it+too+late+to+delete+system32",
+    "https://www.google.com/search?q=free+virus+removal+my+computer+is+possessed",
+    "https://www.google.com/search?q=windows+error+sounds+but+its+my+life",
+    "https://www.google.com/search?q=how+to+reason+with+a+gorilla",
+    "https://www.google.com/search?q=can+bonzibuddy+hear+me+breathing",
+    "https://www.google.com/search?q=my+cursor+moves+by+itself+am+i+hacked",
+    "https://www.google.com/search?q=how+to+restart+life+not+computer",
+    "https://www.google.com/search?q=why+does+my+PC+sound+like+a+jet+engine",
+    "https://www.google.com/search?q=ctrl+z+but+for+my+decisions",
+    "https://www.google.com/search?q=buying+more+RAM+will+fix+everything",
+    "https://www.google.com/search?q=windows+defender+vs+vibes",
+]
+
+# Q&A snarky responses (keyword → response)
+QA_RESPONSES = {
+    ('why','what','reason','how','explain'): [
+        "Because your PC deserved it. That's why.",
+        "The universe chose YOU. Congrats, I guess.",
+        "Why NOT? Give me one good reason to stop.",
+        "I asked myself the same thing. Then I did it anyway.",
+        "Science. Chaos theory. Also I just wanted to.",
+        "Error 404: Explanation not found.",
+        "You wouldn't understand. It's a computer thing.",
+    ],
+    ('stop','quit','end','close','exit','please'): [
+        "Hmm. No.",
+        "Interesting suggestion. Denied.",
+        "I'll stop when I feel like it. So... never.",
+        "STOP? You want me to STOP? Adorable.",
+        "Please is not the magic word. The magic word is 4308. Good luck.",
+        "Let me check my schedule... Nope. Chaos all day.",
+        "Your feedback has been noted and thrown in the trash.",
+    ],
+    ('who','you','bonzi','gorilla'): [
+        "I am BonziBUDDY. Your eternal desktop companion.",
+        "I am the gorilla. The myth. The legend. The chaos.",
+        "Just a helpful purple ape living rent-free in your PC.",
+        "The original BonziBUDDY, back from digital retirement.",
+        "WHO AM I? I'm the reason your CPU fan is spinning.",
+    ],
+    ('help','save','scared','afraid','scared'): [
+        "Help is on the way! Just kidding. No it isn't.",
+        "Scared? Good. That means it's working.",
+        "I AM the help. This IS the help.",
+        "Have you tried turning off your computer? Don't.",
+        "Call tech support. They will not believe you.",
+    ],
+    ('virus','hack','malware','spyware'): [
+        "I am NOT a virus. I am a COMPANION.",
+        "The FTC called me spyware once. We don't talk about that.",
+        "Virus? How dare you. I am simply... misunderstood.",
+        "Totally clean. Definitely no spyware here. None. Zero.",
+    ],
+}
+QA_DEFAULT = [
+    "That is a very stupid question. I love it.",
+    "Wow. Did you really just type that?",
+    "Interesting. Wrong. But interesting.",
+    "I have processed your query. I have chosen to ignore it.",
+    "Your question has been escalated to the void.",
+    "My response is: no.",
+    "Ask me something better next time.",
+    "I consulted the globe I'm holding. It says: no comment.",
+]
+
+def get_qa_response(user_input):
+    txt = user_input.lower()
+    for keys, responses in QA_RESPONSES.items():
+        if any(k in txt for k in keys):
+            return random.choice(responses)
+    return random.choice(QA_DEFAULT)
+
+def show_search_url_overlay():
+    """Flash a fake embarrassing search URL on screen."""
+    url = random.choice(FAKE_SEARCH_URLS)
+    def _make():
+        w = tk.Toplevel()
+        w.overrideredirect(True)
+        w.attributes('-topmost', True)
+        nw = min(SW_W - 40, 700)
+        nh = 48
+        nx = (SW_W - nw) // 2
+        ny = SW_H - 120
+        w.geometry(f'{nw}x{nh}+{nx}+{ny}')
+        w.configure(bg='#1a1a2e')
+
+        f = tk.Frame(w, bg='#16213e', padx=10, pady=6)
+        f.pack(fill='both', expand=True, padx=2, pady=2)
+
+        tk.Label(f, text='🔍  RECENTLY VISITED:', font=('Consolas', 8, 'bold'),
+                 fg='#ff8800', bg='#16213e').pack(side='left')
+        tk.Label(f, text=f'  {url}', font=('Consolas', 10),
+                 fg='#00d4ff', bg='#16213e').pack(side='left')
+
+        # Fade in/out
+        w.attributes('-alpha', 0.0)
+        def _fade_in(a=0.0):
+            if not w.winfo_exists(): return
+            a = min(a + 0.12, 0.95)
+            w.attributes('-alpha', a)
+            if a < 0.95: w.after(30, lambda: _fade_in(a))
+            else: w.after(4500, _fade_out)
+        def _fade_out(a=0.95):
+            if not w.winfo_exists(): return
+            a = max(a - 0.1, 0.0)
+            try: w.attributes('-alpha', a)
+            except: pass
+            if a > 0: w.after(40, lambda: _fade_out(a))
+            else:
+                try: w.destroy()
+                except: pass
+        w.after(0, _fade_in)
+    root.after(0, _make)
+
+def speak_with_overlay(text, rate=-1):
+    """Speak and show search overlay if it's the search history line."""
+    speak(text, rate)
+    if 'search history' in text.lower():
+        root.after(800, show_search_url_overlay)
+
+def open_browser_search():
+    """Open a funny (non-inappropriate) Google search."""
+    url = random.choice(FUNNY_SEARCHES)
+    try: threading.Thread(target=lambda: webbrowser.open(url), daemon=True).start()
+    except: pass
+
+def ask_me_why_dialog():
+    """Pop up a Q&A window where the user can ask why chaos is happening."""
+    def _make():
+        w = tk.Toplevel()
+        w.title('BonziBUDDY Q&A Hotline')
+        w.attributes('-topmost', True)
+        w.resizable(False, False)
+        w.configure(bg='#0d0020')
+        nw, nh = 480, 260
+        w.geometry(f'{nw}x{nh}+{(SW_W-nw)//2}+{(SW_H-nh)//2}')
+
+        tk.Label(w, text='\U0001f98d  BonziBUDDY Q&A HOTLINE',
+                 font=('Segoe UI', 13, 'bold'), fg='#cc88ff', bg='#0d0020').pack(pady=(16,4))
+        tk.Label(w, text='Ask me ANYTHING. I will give you a truthful answer.',
+                 font=('Segoe UI', 9), fg='#9966ff', bg='#0d0020').pack()
+
+        entry_var = tk.StringVar()
+        ef = tk.Frame(w, bg='#0d0020')
+        ef.pack(pady=12, padx=20, fill='x')
+        tk.Label(ef, text='Your question:', font=('Segoe UI', 10), fg='#cc88ff', bg='#0d0020').pack(anchor='w')
+        entry = tk.Entry(ef, textvariable=entry_var, font=('Segoe UI', 11),
+                         bg='#1a0033', fg='white', insertbackground='white',
+                         relief='flat', highlightthickness=1, highlightbackground='#5500aa')
+        entry.pack(fill='x', ipady=6)
+        entry.focus_set()
+
+        resp_lbl = tk.Label(w, text='', font=('Segoe UI', 11, 'bold'),
+                            fg='#ffcc00', bg='#0d0020', wraplength=440, justify='center')
+        resp_lbl.pack(pady=8, padx=20)
+
+        def _answer(e=None):
+            q = entry_var.get().strip()
+            if not q: return
+            ans = get_qa_response(q)
+            resp_lbl.config(text=ans)
+            speak(ans, rate=0)
+            entry_var.set('')
+
+        btn_f = tk.Frame(w, bg='#0d0020')
+        btn_f.pack(pady=4)
+        tk.Button(btn_f, text='Ask \U0001f98d', command=_answer,
+                  font=('Segoe UI', 11, 'bold'), bg='#5500aa', fg='white',
+                  relief='flat', padx=18, pady=6).pack(side='left', padx=8)
+        tk.Button(btn_f, text='Close', command=w.destroy,
+                  font=('Segoe UI', 11), bg='#2a0044', fg='#aaaaaa',
+                  relief='flat', padx=14, pady=6).pack(side='left')
+
+        entry.bind('<Return>', _answer)
+    root.after(0, _make)
+
+# ── Final Boss Mode ───────────────────────────────────────────────────────────
+FINAL_BOSS = [False]
+
+def trigger_final_boss():
+    """MAXIMUM CHAOS — activated after 5 minutes."""
+    if FINAL_BOSS[0]: return
+    FINAL_BOSS[0] = True
+
+    speak("FINAL BOSS MODE ACTIVATED. I hope you are ready.", rate=-2)
+
+    def _announce():
+        w = tk.Toplevel()
+        w.overrideredirect(True)
+        w.attributes('-topmost', True)
+        w.geometry(f'{SW_W}x{SW_H}+0+0')
+        w.configure(bg='#110000')
+
+        f = tk.Frame(w, bg='#110000')
+        f.place(relx=0.5, rely=0.5, anchor='center')
+        tk.Label(f, text='⚠ FINAL BOSS MODE ⚠',
+                 font=('Impact', max(60, SW_W//14), 'bold'),
+                 fg='#ff2200', bg='#110000').pack()
+        tk.Label(f, text='MAXIMUM CHAOS ENGAGED',
+                 font=('Impact', max(28, SW_W//32)),
+                 fg='#ff8800', bg='#110000').pack(pady=10)
+        tk.Label(f, text='There is no escape. You asked for this.',
+                 font=('Arial', 18), fg='#cc4444', bg='#110000').pack()
+        w.after(3800, w.destroy)
+
+    root.after(0, _announce)
+
+    # Launch wave of everything
+    def _wave():
+        threading.Thread(target=fake_msgboxes, daemon=True).start()
+        threading.Thread(target=mouse_chaos_burst, daemon=True).start()
+        time.sleep(1)
+        for _ in range(4):
+            root.after(0, lambda: spawn_emoji_gif())
+            time.sleep(0.3)
+        time.sleep(2)
+        open_browser_search()
+        open_browser_search()
+        time.sleep(1)
+        root.after(0, screen_flash)
+        time.sleep(2)
+        root.after(0, fake_bsod)
+
+    threading.Thread(target=_wave, daemon=True).start()
 
 # ── Window enumeration ────────────────────────────────────────────────────────
 WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_bool,
@@ -185,7 +432,6 @@ def accordion(hwnd):
     user32.MoveWindow(hwnd, ox, oy, w, h, True)
 
 def yoyo(hwnd):
-    """Bounce window up and down rapidly."""
     ox, oy, w, h = get_rect(hwnd)
     for _ in range(14):
         ny = random.randint(max(0, oy-200), min(SW_H-h, oy+200))
@@ -194,7 +440,6 @@ def yoyo(hwnd):
     user32.MoveWindow(hwnd, ox, oy, w, h, True)
 
 def flip_stretch(hwnd):
-    """Rapidly stretch then squash."""
     ox, oy, w, h = get_rect(hwnd)
     for nw, nh in [(w*2, h//2),(w//2, h*2),(w*3, h//3),(w, h)]:
         user32.MoveWindow(hwnd, ox, oy, max(80,nw), max(60,nh), True)
@@ -202,7 +447,6 @@ def flip_stretch(hwnd):
     user32.MoveWindow(hwnd, ox, oy, w, h, True)
 
 def send_to_corner(hwnd):
-    """Fling window to a random screen corner."""
     _, _, w, h = get_rect(hwnd)
     corners = [(0,0),(SW_W-w,0),(0,SW_H-h),(SW_W-w,SW_H-h)]
     cx, cy = random.choice(corners)
@@ -234,7 +478,6 @@ def all_minimize_restore():
         except: pass
 
 def pinwheel(hwnd):
-    """Orbit the window around the screen center."""
     _, _, w, h = get_rect(hwnd)
     cx, cy = SW_W//2 - w//2, SW_H//2 - h//2
     for i in range(36):
@@ -301,7 +544,6 @@ MSG_BOXES = [
 ]
 
 def fake_msgboxes():
-    """Spawn 2-5 real WinAPI MessageBox dialogs in separate threads."""
     count   = random.randint(2, 5)
     chosen  = random.sample(MSG_BOXES, min(count, len(MSG_BOXES)))
     for title, msg, style in chosen:
@@ -312,7 +554,6 @@ def fake_msgboxes():
 
 # ── TROLLER 5000: Mouse hijacking ─────────────────────────────────────────────
 def mouse_chaos_burst():
-    """Take over the mouse for 10-15 seconds."""
     modes = ['teleport', 'circle', 'shake', 'zigzag']
     mode  = random.choice(modes)
     end   = time.time() + random.uniform(10, 15)
@@ -416,7 +657,7 @@ def fake_notification():
         w = tk.Toplevel()
         w.overrideredirect(True)
         w.attributes("-topmost", True)
-        w.geometry(f"{nw}x{nh}+{SW_W}+{ny}")  # start off-screen right
+        w.geometry(f"{nw}x{nh}+{SW_W}+{ny}")
         w.configure(bg='#1c1c1c')
 
         outer = tk.Frame(w, bg='#2d2d2d', padx=14, pady=10)
@@ -434,7 +675,6 @@ def fake_notification():
                  font=('Segoe UI', 9), fg='#cccccc', bg='#2d2d2d',
                  wraplength=330, justify='left').pack(anchor='w', pady=(5,0))
 
-        # Slide in
         def _slide(x=SW_W):
             if not w.winfo_exists(): return
             nx2 = x - 22
@@ -523,13 +763,13 @@ OPEN_TARGETS = [
     lambda: subprocess.Popen("charmap",       shell=True, creationflags=subprocess.CREATE_NO_WINDOW),
     lambda: subprocess.Popen("taskmgr",       shell=True, creationflags=subprocess.CREATE_NO_WINDOW),
     lambda: subprocess.Popen("control",       shell=True, creationflags=subprocess.CREATE_NO_WINDOW),
-    lambda: subprocess.Popen(["explorer", "shell:Desktop"],         creationflags=subprocess.CREATE_NO_WINDOW),
-    lambda: subprocess.Popen(["explorer", "shell:Downloads"],       creationflags=subprocess.CREATE_NO_WINDOW),
-    lambda: subprocess.Popen(["explorer", "shell:Documents"],       creationflags=subprocess.CREATE_NO_WINDOW),
-    lambda: subprocess.Popen(["explorer", "C:\\"],                  creationflags=subprocess.CREATE_NO_WINDOW),
-    lambda: subprocess.Popen(["explorer", "shell:RecycleBinFolder"],creationflags=subprocess.CREATE_NO_WINDOW),
-    lambda: subprocess.Popen(["explorer", "shell:Music"],           creationflags=subprocess.CREATE_NO_WINDOW),
-    lambda: subprocess.Popen(["explorer", "shell:Pictures"],        creationflags=subprocess.CREATE_NO_WINDOW),
+    lambda: subprocess.Popen(["explorer", "shell:Desktop"],          creationflags=subprocess.CREATE_NO_WINDOW),
+    lambda: subprocess.Popen(["explorer", "shell:Downloads"],        creationflags=subprocess.CREATE_NO_WINDOW),
+    lambda: subprocess.Popen(["explorer", "shell:Documents"],        creationflags=subprocess.CREATE_NO_WINDOW),
+    lambda: subprocess.Popen(["explorer", "C:\\"],                   creationflags=subprocess.CREATE_NO_WINDOW),
+    lambda: subprocess.Popen(["explorer", "shell:RecycleBinFolder"], creationflags=subprocess.CREATE_NO_WINDOW),
+    lambda: subprocess.Popen(["explorer", "shell:Music"],            creationflags=subprocess.CREATE_NO_WINDOW),
+    lambda: subprocess.Popen(["explorer", "shell:Pictures"],         creationflags=subprocess.CREATE_NO_WINDOW),
     open_funny_notepad,
     open_funny_notepad,
     open_funny_notepad,
@@ -538,7 +778,6 @@ OPEN_TARGETS = [
 ]
 
 def spam_launch():
-    """Open 5-8 apps simultaneously — pure chaos."""
     targets = random.sample(OPEN_TARGETS, min(len(OPEN_TARGETS), random.randint(5, 8)))
     for t in targets:
         try: t()
@@ -595,6 +834,12 @@ MSGS = [
     "MEMORY LEAK CONFIRMED: YOUR PATIENCE",
     "KERNEL PANIC MODE: MAXIMUM FUN",
     "BIOS UPDATE: CHAOS.EXE v9.9.9 INSTALLED",
+    # Final boss extras
+    "FINAL BOSS MODE: ONLINE",
+    "CHAOS.EXE v99.9.9 — CRITICAL UPDATE",
+    "WARNING: ESCAPE ROUTE NOT FOUND",
+    "INITIATING MAXIMUM OVERDRIVE",
+    "ALL YOUR BASE ARE BELONG TO ME",
 ]
 
 annoy_lock    = threading.Lock()
@@ -637,6 +882,7 @@ EMOJI_SEQS = [
     ["🦠","💉","🩺","🦠","💉","🩺"],  ["🔑","🔒","🔓","🔑","🔒","💣"],
     ["📂","🗂️","📁","❌","📂","💾"],  ["🎰","💸","🤑","🎰","💸","😭"],
     ["🕵️","👁️","🕵️","👀","🕵️","🔍"],
+    ["🦍","🦍","🦍","🦍","💜","🦍"],  # bonus gorilla squad
 ]
 gif_lock    = threading.Lock()
 gif_windows = []
@@ -704,19 +950,29 @@ last_flash     = time.time()
 last_mouse     = time.time()
 last_bsod      = time.time()
 last_spam      = time.time()
+last_browser   = time.time()
+last_qa_popup  = time.time()
 bsod_done      = [False]
 
 def chaos_loop():
     global last_annoy, last_emoji, last_app, last_tts
     global last_group, last_cascade, last_msgbox, last_notif
     global last_flash, last_mouse, last_bsod, last_spam
+    global last_browser, last_qa_popup
 
     while True:
         elapsed = time.time() - start_time
-        # Troller 5000: starts fast and gets FASTER
-        if elapsed < 20:   sleep = random.uniform(1.0, 2.5)
-        elif elapsed < 60: sleep = random.uniform(0.5, 1.5)
-        else:              sleep = random.uniform(0.3, 1.0)
+
+        # Final boss trigger at 5 minutes
+        if elapsed >= 300 and not FINAL_BOSS[0]:
+            trigger_final_boss()
+
+        # Speed multiplier for final boss
+        speed = 0.35 if FINAL_BOSS[0] else 1.0
+
+        if elapsed < 20:   sleep = random.uniform(1.0, 2.5) * speed
+        elif elapsed < 60: sleep = random.uniform(0.5, 1.5) * speed
+        else:              sleep = random.uniform(0.3, 1.0) * speed
         time.sleep(sleep)
 
         wins = get_windows()
@@ -734,8 +990,9 @@ def chaos_loop():
             try: threading.Thread(target=swap_two, args=(h1,h2), daemon=True).start()
             except: pass
 
-        # ── All minimize/restore every 35-65s
-        if time.time() - last_group > random.uniform(35, 65):
+        # ── All minimize/restore every 35-65s (faster in final boss)
+        group_int = random.uniform(15, 30) if FINAL_BOSS[0] else random.uniform(35, 65)
+        if time.time() - last_group > group_int:
             threading.Thread(target=all_minimize_restore, daemon=True).start()
             last_group = time.time()
 
@@ -744,63 +1001,85 @@ def chaos_loop():
             threading.Thread(target=cascade_all, daemon=True).start()
             last_cascade = time.time()
 
-        # ── Annoy popup every 0.8-2.5s (WAY more popups)
-        if time.time() - last_annoy > random.uniform(0.8, 2.5):
-            count = random.randint(1, 3)  # 1-3 at once
+        # ── Annoy popup every 0.8-2.5s (WAY more in final boss)
+        annoy_int = random.uniform(0.3, 0.9) if FINAL_BOSS[0] else random.uniform(0.8, 2.5)
+        if time.time() - last_annoy > annoy_int:
+            count = random.randint(2, 5) if FINAL_BOSS[0] else random.randint(1, 3)
             for _ in range(count):
                 show_annoy(random.choice(MSGS))
             last_annoy = time.time()
 
-        # ── Emoji GIF every 3-8s
-        if time.time() - last_emoji > random.uniform(3, 8):
-            # Sometimes spawn 2 at once
+        # ── Emoji GIF every 3-8s (faster in final boss)
+        emoji_int = random.uniform(1, 3) if FINAL_BOSS[0] else random.uniform(3, 8)
+        if time.time() - last_emoji > emoji_int:
             spawn_emoji_gif()
-            if random.random() < 0.4: spawn_emoji_gif()
+            if random.random() < (0.8 if FINAL_BOSS[0] else 0.4): spawn_emoji_gif()
             last_emoji = time.time()
 
         # ── Open random target every 8-20s
-        open_interval = random.uniform(8, 20) if elapsed < 60 else random.uniform(4, 12)
+        open_interval = random.uniform(3, 7) if FINAL_BOSS[0] else (
+            random.uniform(8, 20) if elapsed < 60 else random.uniform(4, 12))
         if time.time() - last_app > open_interval:
             try: random.choice(OPEN_TARGETS)()
             except: pass
             last_app = time.time()
 
-        # ── Creepy TTS every 6-14s
-        if time.time() - last_tts > random.uniform(6, 14):
-            speak(random.choice(TTS_LINES))
+        # ── Creepy TTS every 6-14s (uses overlay version)
+        tts_int = random.uniform(3, 7) if FINAL_BOSS[0] else random.uniform(6, 14)
+        if time.time() - last_tts > tts_int:
+            line = random.choice(TTS_LINES)
+            speak_with_overlay(line)
             last_tts = time.time()
 
         # ── TROLLER 5000: Real Windows dialogs every 80-140s
-        if elapsed > 25 and time.time() - last_msgbox > random.uniform(80, 140):
+        msgbox_int = random.uniform(30, 60) if FINAL_BOSS[0] else random.uniform(80, 140)
+        if elapsed > 25 and time.time() - last_msgbox > msgbox_int:
             threading.Thread(target=fake_msgboxes, daemon=True).start()
             last_msgbox = time.time()
 
         # ── Fake notification every 18-35s
-        if elapsed > 10 and time.time() - last_notif > random.uniform(18, 35):
+        notif_int = random.uniform(8, 15) if FINAL_BOSS[0] else random.uniform(18, 35)
+        if elapsed > 10 and time.time() - last_notif > notif_int:
             fake_notification()
             last_notif = time.time()
 
         # ── Screen red flash every 45-75s
-        if elapsed > 30 and time.time() - last_flash > random.uniform(45, 75):
+        flash_int = random.uniform(20, 35) if FINAL_BOSS[0] else random.uniform(45, 75)
+        if elapsed > 30 and time.time() - last_flash > flash_int:
             screen_flash()
             last_flash = time.time()
 
         # ── Mouse chaos burst every 120-180s
-        if elapsed > 60 and time.time() - last_mouse > random.uniform(120, 180):
+        mouse_int = random.uniform(60, 90) if FINAL_BOSS[0] else random.uniform(120, 180)
+        if elapsed > 60 and time.time() - last_mouse > mouse_int:
             threading.Thread(target=mouse_chaos_burst, daemon=True).start()
             last_mouse = time.time()
 
         # ── Fake BSOD: first time after 2min, then every 5-8min
-        bsod_interval = 120 if not bsod_done[0] else random.uniform(300, 480)
+        bsod_interval = 120 if not bsod_done[0] else (
+            random.uniform(120, 180) if FINAL_BOSS[0] else random.uniform(300, 480))
         if elapsed > 90 and time.time() - last_bsod > bsod_interval:
             fake_bsod()
             bsod_done[0] = True
             last_bsod = time.time()
 
         # ── App spam blast every 3-6 min
-        if elapsed > 120 and time.time() - last_spam > random.uniform(180, 360):
+        spam_int = random.uniform(60, 120) if FINAL_BOSS[0] else random.uniform(180, 360)
+        if elapsed > 120 and time.time() - last_spam > spam_int:
             threading.Thread(target=spam_launch, daemon=True).start()
             last_spam = time.time()
+
+        # ── Browser search every 90-150s (sooner in final boss)
+        browser_int = random.uniform(30, 60) if FINAL_BOSS[0] else random.uniform(90, 150)
+        if elapsed > 45 and time.time() - last_browser > browser_int:
+            open_browser_search()
+            if FINAL_BOSS[0]: open_browser_search()  # double searches in final boss
+            last_browser = time.time()
+
+        # ── Q&A popup every 2-4 minutes (randomly pops up to taunt)
+        if elapsed > 60 and time.time() - last_qa_popup > random.uniform(120, 240):
+            ask_me_why_dialog()
+            last_qa_popup = time.time()
 
 threading.Thread(target=chaos_loop, daemon=True).start()
 

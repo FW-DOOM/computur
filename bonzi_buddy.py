@@ -10,7 +10,7 @@ Restore Bonzi: type 1111  (after right-click Hide)
 """
 import tkinter as tk
 import random, threading, time, base64, io, sys, subprocess, os, tempfile, shutil, re, math
-import ctypes, ctypes.wintypes
+import ctypes, ctypes.wintypes, winsound, urllib.parse
 
 # -- Auto-install Pillow -------------------------------------------------------
 try:
@@ -29,129 +29,106 @@ from bonzi_b64 import FRAMES   # dict: int -> base64 str
 
 # -- Voice engine ---------------------------------------------------------------
 # Priority chain:
-#   1. L&H TruVoice SAPI 4   — the ACTUAL Bonzi Buddy voice (auto-installs from archive.org)
-#   2. eSpeak NG              — closest robotic alternative (winget install eSpeak.eSpeakNG)
-#   3. Windows SAPI 5         — last resort fallback
+#   1. tetyys.com SAPI4 online API  — the REAL Bonzi voice, no install, free GET endpoint
+#   2. L&H TruVoice SAPI4 local     — if installed; auto-installs in background
+#   3. eSpeak NG                    — instant fallback (winget install eSpeak.eSpeakNG)
+#   4. Windows SAPI 5               — last resort
 
-# ── L&H TruVoice auto-installer ───────────────────────────────────────────────
 import winreg, urllib.request
 
-_LH_VOICE = [False]   # set True once verified installed
+# ── tetyys.com SAPI4 online API ────────────────────────────────────────────────
+# Confirmed working: single GET → raw WAV, no API key, no install
+# pitch=140 speed=157 = the iconic Bonzi Buddy "Adult Male #2" register
+# (community-verified: https://github.com/dot-Justin/BonziBuddy-TTS)
+_TETYYS_VOICE = 'Adult%20Male%20%232%2C%20American%20English%20(TruVoice)'
+_TETYYS_URL   = ('https://tetyys.com/SAPI4/SAPI4'
+                 f'?voice={_TETYYS_VOICE}&pitch=140&speed=157&text={{}}')
+_TETYYS_OK    = [True]   # flip False if fetch fails, so we skip it next time
 
-# Confirmed working archive.org URLs (verified May 2026)
-# spchapi.exe = SAPI 4 SDK runtime — MUST install BEFORE the voice pack
-# lhtts.exe   = L&H TruVoice 3.0 voice pack (22 MB) — has "Adult Male #2"
-_SAPI4_SDK_URL = 'https://archive.org/download/TextToSpeechVoices/mike9012.neocities.org/spchapi.exe'
-_LH_DL_URLS = [
-    'https://archive.org/download/lhtts/lhtts.exe',                           # 22 MB — CONFIRMED WORKING
-    'https://archive.org/download/lernout-and-hauspie-tts-3.0/LHTTSInst.exe', # fallback mirror
+def _speak_tetyys(text):
+    """Fetch real Bonzi WAV from tetyys.com SAPI4 API and play via winsound.
+    Network fetch ~200-400 ms, then instant playback. Killable via winsound.SND_PURGE."""
+    url = _TETYYS_URL.format(urllib.parse.quote(text, safe=''))
+    def _go():
+        tmp_path = None
+        try:
+            tmp = tempfile.NamedTemporaryFile(suffix='.wav', delete=False)
+            tmp.close(); tmp_path = tmp.name
+            req = urllib.request.Request(url, headers={'User-Agent': 'BonziBuddy/4.0'})
+            with urllib.request.urlopen(req, timeout=6) as resp:
+                data = resp.read()
+            if len(data) < 200: raise ValueError('bad response')   # 404 html stub
+            with open(tmp_path, 'wb') as f: f.write(data)
+            _TETYYS_OK[0] = True
+            # SND_FILENAME = play file synchronously; interrupted by SND_PURGE from _kill_tts
+            winsound.PlaySound(tmp_path,
+                               winsound.SND_FILENAME | winsound.SND_NODEFAULT)
+        except:
+            _TETYYS_OK[0] = False   # network down or API changed — skip next time
+        finally:
+            if tmp_path:
+                try: os.unlink(tmp_path)
+                except: pass
+    threading.Thread(target=_go, daemon=True).start()
+
+# ── L&H TruVoice SAPI4 local install (background, used if tetyys unavailable) ─
+_LH_VOICE     = [False]
+_SAPI4_SDK_URL = ('https://archive.org/download/TextToSpeechVoices/'
+                  'mike9012.neocities.org/spchapi.exe')
+_LH_DL_URLS   = [
+    'https://archive.org/download/lhtts/lhtts.exe',                           # 22 MB — confirmed
+    'https://archive.org/download/lernout-and-hauspie-tts-3.0/LHTTSInst.exe',
     'https://archive.org/download/lernout-hauspie-tts/LHTTSInst.exe',
 ]
 
-# ── TTS process tracking — so we can kill speech when Bonzi hides ─────────────
-_tts_procs = []
-_tts_lock  = threading.Lock()
-
-def _kill_tts():
-    """Immediately silence all active TTS subprocesses."""
-    with _tts_lock:
-        procs = list(_tts_procs)
-        _tts_procs.clear()
-    for p in procs:
-        try: p.kill()
-        except: pass
-    # belt-and-suspenders: nuke by process name
-    for exe in ('espeak-ng.exe', ):
-        try:
-            subprocess.run(['taskkill', '/F', '/IM', exe],
-                           creationflags=subprocess.CREATE_NO_WINDOW,
-                           capture_output=True, timeout=3)
-        except: pass
-
 def _check_lh():
-    """Return True if L&H TruVoice SAPI 4 is registered on this machine."""
-    try:
-        winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
-                       r'SOFTWARE\Lernout & Hauspie\TruVoice')
-        _LH_VOICE[0] = True
-        return True
-    except:
-        pass
-    try:
-        winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
-                       r'SOFTWARE\WOW6432Node\Lernout & Hauspie\TruVoice')
-        _LH_VOICE[0] = True
-        return True
-    except:
-        return False
+    for key in (r'SOFTWARE\Lernout & Hauspie\TruVoice',
+                r'SOFTWARE\WOW6432Node\Lernout & Hauspie\TruVoice'):
+        try:
+            winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key)
+            _LH_VOICE[0] = True; return True
+        except: pass
+    return False
 
 def _install_lh_bg():
-    """Background thread: silently download + install L&H TruVoice.
-    Step 1 — spchapi.exe  (SAPI 4 SDK, ~825 KB) — runtime required by voice pack
-    Step 2 — lhtts.exe    (L&H TruVoice 3.0,  ~22 MB) — has 'Adult Male #2'
-    Both silent-install with /S /SILENT /NORESTART flags."""
     if _check_lh(): return
     tmp_dir = tempfile.gettempdir()
-
-    # ── Step 1: SAPI 4 SDK ──────────────────────────────────────────────────────
-    sapi_tmp = os.path.join(tmp_dir, 'spchapi.exe')
-    try:
-        urllib.request.urlretrieve(_SAPI4_SDK_URL, sapi_tmp)
-        sz = os.path.getsize(sapi_tmp)
-        if sz > 50_000:
-            with open(sapi_tmp, 'rb') as f:
-                if f.read(2) == b'MZ':
-                    subprocess.run([sapi_tmp, '/S', '/SILENT', '/NORESTART'],
-                                   timeout=60, creationflags=subprocess.CREATE_NO_WINDOW)
-    except: pass
-    finally:
-        try: os.unlink(sapi_tmp)
-        except: pass
-
-    # ── Step 2: L&H TruVoice pack ──────────────────────────────────────────────
-    tmp = os.path.join(tmp_dir, 'LHTTSInst.exe')
-    for url in _LH_DL_URLS:
+    for url, fname, min_sz in [
+        (_SAPI4_SDK_URL, 'spchapi.exe', 50_000),
+        (_LH_DL_URLS[0], 'LHTTSInst.exe', 1_000_000),
+    ]:
+        p = os.path.join(tmp_dir, fname)
         try:
-            urllib.request.urlretrieve(url, tmp)
-            sz = os.path.getsize(tmp)
-            if sz < 1_000_000: continue     # real installer is ~22 MB — reject tiny stubs
-            with open(tmp, 'rb') as f:
-                if f.read(2) != b'MZ': continue
-            subprocess.run([tmp, '/S', '/SILENT', '/NORESTART'],
-                           timeout=180, creationflags=subprocess.CREATE_NO_WINDOW)
-            if _check_lh(): break
-        except: continue
-    try: os.unlink(tmp)
-    except: pass
+            urllib.request.urlretrieve(url, p)
+            if os.path.getsize(p) > min_sz:
+                with open(p, 'rb') as f:
+                    if f.read(2) == b'MZ':
+                        subprocess.run([p, '/S', '/SILENT', '/NORESTART'],
+                                       timeout=180, creationflags=subprocess.CREATE_NO_WINDOW)
+        except: pass
+        finally:
+            try: os.unlink(p)
+            except: pass
+    _check_lh()
 
 threading.Thread(target=_install_lh_bg, daemon=True).start()
 
 def _speak_lh(text):
-    """Speak via L&H TruVoice SAPI 4 using wscript.exe + VBScript.
-    wscript starts in ~50 ms vs PowerShell's ~500 ms — near-zero latency."""
-    safe = (text.replace('"', ' ').replace("'", ' ')
-                .replace('\n', ' ').replace('\r', '').replace('\\', ' '))
+    """L&H TruVoice via wscript.exe VBScript — ~50 ms startup, used offline."""
+    safe = (text.replace('"',' ').replace("'",' ')
+                .replace('\n',' ').replace('\r','').replace('\\',' '))
     vbs = (
-        'Dim v\n'
-        'Set v = CreateObject("Speech.VoiceText")\n'
-        'v.Register "BonziApp", 0\n'
-        'On Error Resume Next\n'
-        'Dim vl, i\n'
-        'Set vl = v.GetVoiceList\n'
+        'Dim v\nSet v = CreateObject("Speech.VoiceText")\n'
+        'v.Register "BonziApp", 0\nOn Error Resume Next\n'
+        'Dim vl, i\nSet vl = v.GetVoiceList\n'
         'For i = 0 To vl.Count - 1\n'
         '  Dim md : md = vl.Item(i).ModeName\n'
-        '  If InStr(md, "Adult Male") > 0 And InStr(md, "2") > 0 Then\n'
-        '    v.Set vl.Item(i), 0\n'
-        '    Exit For\n'
-        '  End If\n'
-        'Next\n'
-        # \Pit=50\ = pitch 50 (low/deep — the iconic Bonzi voice register)
-        # \Spd=160\ = speaking rate (brisk, like real Bonzi)
-        # Embedded L&H SAPI4 control tags must be FIRST in the string
-        f'v.Speak "\\Pit=50\\\\Spd=160\\{safe}", 0\n'   # 0 = sync
+        '  If InStr(md,"Adult Male")>0 And InStr(md,"2")>0 Then\n'
+        '    v.Set vl.Item(i), 0 : Exit For\n'
+        '  End If\nNext\n'
+        f'v.Speak "{safe}", 0\n'   # synchronous; wscript exits when done
     )
-    tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.vbs',
-                                      delete=False, encoding='utf-8')
+    tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.vbs', delete=False, encoding='utf-8')
     tmp.write(vbs); tmp.close()
     proc = subprocess.Popen(['wscript.exe', '/nologo', tmp.name],
                              creationflags=subprocess.CREATE_NO_WINDOW)
@@ -165,6 +142,29 @@ def _speak_lh(text):
         _tts_procs.append(proc)
         _tts_procs[:] = [p for p in _tts_procs if p.poll() is None]
 
+# ── TTS process / playback tracking ───────────────────────────────────────────
+_tts_procs = []
+_tts_lock  = threading.Lock()
+
+def _kill_tts():
+    """Stop ALL active TTS instantly — winsound, subprocesses, espeak."""
+    # Stop winsound WAV playback (tetyys / any SND_FILENAME)
+    try: winsound.PlaySound(None, winsound.SND_PURGE)
+    except: pass
+    # Kill tracked subprocesses (L&H wscript, SAPI5 powershell)
+    with _tts_lock:
+        procs = list(_tts_procs); _tts_procs.clear()
+    for p in procs:
+        try: p.kill()
+        except: pass
+    # Belt-and-suspenders: nuke by name
+    for exe in ('espeak-ng.exe', 'wscript.exe'):
+        try:
+            subprocess.run(['taskkill', '/F', '/IM', exe],
+                           creationflags=subprocess.CREATE_NO_WINDOW,
+                           capture_output=True, timeout=2)
+        except: pass
+
 def _find_espeak():
     for p in [r'C:\Program Files\eSpeak NG\espeak-ng.exe',
               r'C:\Program Files (x86)\eSpeak NG\espeak-ng.exe']:
@@ -175,16 +175,16 @@ ESPEAK_PATH = _find_espeak()
 
 VOICE_CFG = {
     'enabled':  True,
-    'engine':   'espeak',   # 'espeak' | 'sapi'
-    # eSpeak settings — tuned to match Bonzi Buddy delivery
-    'es_voice': 'en+m3',    # en+m3 = closest formant to L&H Adult Male #2
-    'es_pitch': 55,          # 0–99; 55 = slightly raised, nasal male register
-    'es_speed': 200,         # WPM — Bonzi talks FAST. 200 is the sweet spot.
-    'es_amp':   200,         # amplitude (volume/punch); default 100, 200 = snappier
+    'engine':   'auto',   # 'auto' | 'espeak' | 'sapi'
+    # eSpeak settings — fallback only
+    'es_voice': 'en+m3',
+    'es_pitch': 40,    # lower than before — closer to Adult Male #2 depth
+    'es_speed': 170,
+    'es_amp':   200,
     # SAPI fallback
-    'rate':    1.3,
-    'pitch':   '+30%',
-    'voice':   '',
+    'rate':  1.2,
+    'pitch': '+0%',
+    'voice': '',
 }
 
 # Pronunciation table — makes eSpeak say things the way Bonzi actually said them
@@ -235,22 +235,33 @@ def _get_voices():
         return []
 
 def speak(text, rate=None, pitch=None):
-    """Speak text in Bonzi's voice. Kills any currently playing speech first (no overlap)."""
+    """Speak text in Bonzi's REAL voice. Kills current speech first (zero overlap).
+    Tier 1: tetyys.com SAPI4 online API  → actual Adult Male #2 at pitch=140 speed=157
+    Tier 2: L&H TruVoice local install   → same engine, offline
+    Tier 3: eSpeak NG                    → instant fallback
+    Tier 4: Windows SAPI 5              → last resort"""
     if not VOICE_CFG['enabled']: return
-    _kill_tts()   # ← stop whatever was playing — zero overlap guaranteed
+    _kill_tts()   # zero overlap — kill whatever was playing
     def _do():
         prepped = _prep(text)
         if not prepped: return
 
-        # ── L&H TruVoice SAPI 4 — the REAL Bonzi voice ──────────────────
+        # ── Tier 1: tetyys.com SAPI4 online — the REAL Bonzi voice ──────
+        if _TETYYS_OK[0]:
+            try:
+                _speak_tetyys(prepped)
+                return
+            except: pass
+
+        # ── Tier 2: L&H TruVoice local (if installed) ───────────────────
         if _LH_VOICE[0]:
             try:
                 _speak_lh(prepped)
                 return
             except: pass
 
-        # ── eSpeak NG (primary fallback) ─────────────────────────────────
-        if VOICE_CFG['engine'] == 'espeak' and ESPEAK_PATH:
+        # ── Tier 3: eSpeak NG ────────────────────────────────────────────
+        if ESPEAK_PATH:
             try:
                 proc = subprocess.Popen(
                     [ESPEAK_PATH,
@@ -258,9 +269,7 @@ def speak(text, rate=None, pitch=None):
                      '-p', str(VOICE_CFG['es_pitch']),
                      '-s', str(VOICE_CFG['es_speed']),
                      '-a', str(VOICE_CFG['es_amp']),
-                     '-k', '10',   # stress capitalized words (Bonzi emphasises a lot)
-                     '--punct=none',
-                     prepped],
+                     '--punct=none', prepped],
                     creationflags=subprocess.CREATE_NO_WINDOW)
                 with _tts_lock:
                     _tts_procs.append(proc)
@@ -268,31 +277,17 @@ def speak(text, rate=None, pitch=None):
                 return
             except: pass
 
-        # ── SAPI fallback ────────────────────────────────────────────────
-        r_val = VOICE_CFG['rate']  if rate  is None else rate
-        p_val = VOICE_CFG['pitch'] if pitch is None else pitch
+        # ── Tier 4: Windows SAPI 5 ──────────────────────────────────────
         clean = (prepped.replace('&','and').replace('<','').replace('>','')
                         .replace('"','').replace("'",''))
-        vc = VOICE_CFG['voice']
-        vt = f'<voice name="{vc}">' if vc else ''
-        ve = '</voice>'             if vc else ''
-        ssml = (f'<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">'
-                f'{vt}<prosody pitch="{p_val}" rate="{r_val:.2f}">{clean}</prosody>{ve}'
-                f'</speak>')
+        ps = (f"Add-Type -AssemblyName System.Speech;"
+              f"$s=New-Object System.Speech.Synthesis.SpeechSynthesizer;"
+              f"try{{$s.SelectVoiceByHints([System.Speech.Synthesis.VoiceGender]::Male)}}catch{{}};"
+              f"$s.Rate=1; $s.Speak('{clean}')")
         try:
-            tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.xml',
-                                              delete=False, encoding='utf-8')
-            tmp.write(ssml); tmp.close()
-            fp = tmp.name.replace('\\', '/')
-            ps = (f"Add-Type -AssemblyName System.Speech; "
-                  f"$s=New-Object System.Speech.Synthesis.SpeechSynthesizer; "
-                  f"if(-not '{vc}'){{try{{$s.SelectVoiceByHints("
-                  f"[System.Speech.Synthesis.VoiceGender]::Male)}}catch{{}}}}; "
-                  f"$x=[System.IO.File]::ReadAllText('{fp}'); "
-                  f"$s.SpeakSsml($x); "
-                  f"Remove-Item '{fp}' -Force -ErrorAction SilentlyContinue")
-            proc = subprocess.Popen(["powershell", "-WindowStyle", "Hidden", "-Command", ps],
-                                    creationflags=subprocess.CREATE_NO_WINDOW)
+            proc = subprocess.Popen(
+                ["powershell", "-WindowStyle", "Hidden", "-Command", ps],
+                creationflags=subprocess.CREATE_NO_WINDOW)
             with _tts_lock:
                 _tts_procs.append(proc)
                 _tts_procs[:] = [p for p in _tts_procs if p.poll() is None]
@@ -898,34 +893,36 @@ def build_bonzi():
           ω=1.35π — slightly above natural freq for peppy entry
         Total time ~1150 ms at 14 ms ticks (~82 fps)."""
         DT  = 14   # ms per tick (~71 fps)
-        DUR = 1200 # total ms
+        DUR = 1100 # total ms — one clean arc, not slow oscillation
+
         def _swing_scale(θ):
-            """3D perspective: full-size at bottom (θ≈0), small when far (θ≈92°).
-            scale = 0.48 + 0.52 * cos(θ)  →  cos(0°)=1.0 → scale=1.0
-                                            →  cos(90°)=0  → scale=0.48"""
-            return 0.48 + 0.52 * abs(math.cos(θ))
+            """3D perspective depth: full-size at center (θ=0), half at start (θ=92°).
+            The real Bonzi sprites had this depth baked in — we fake it with PIL resize.
+            scale = 0.50 + 0.50 * |cos(θ)|"""
+            return 0.50 + 0.50 * abs(math.cos(θ))
 
         def _step(elapsed):
             if not main.winfo_exists(): return
             if elapsed >= DUR:
-                # Settle: restore full-size at rest position
                 c.itemconfig(img_item, image=_get_photo((0,)))
                 c.coords(img_item, IMG_CX, IMG_CY)
                 _draw_vine(IMG_CX, IMG_CY)
-                main.after(380, lambda: c.delete('vine') if main.winfo_exists() else None)
-                if done_cb: main.after(480, done_cb)
+                main.after(340, lambda: c.delete('vine') if main.winfo_exists() else None)
+                if done_cb: main.after(440, done_cb)
                 return
             t  = elapsed / DUR
-            θ  = _θ_IN * math.exp(-t * 3.1) * math.cos(math.pi * t * 1.35)
+            # Single clean arc: exp(-4t)*cos(πt)
+            #   t=0   → θ = 92° (off-canvas right, sprite tiny)
+            #   t=0.5 → θ = 0°  (dead center, sprite full-size) ← instant settle
+            #   t=1   → θ ≈ -4° (barely perceptible left, settles)
+            θ  = _θ_IN * math.exp(-t * 4.0) * math.cos(math.pi * t)
             bx = _VP_X + _VL * math.sin(θ)
             by = _VP_Y + _VL * math.cos(θ)
-            # Scale sprite for 3D depth illusion
             sc = _swing_scale(θ)
             c.itemconfig(img_item, image=_get_photo_scaled((0,), sc))
             c.coords(img_item, int(bx), int(by))
             _draw_vine(int(bx), int(by))
             main.after(DT, lambda: _step(elapsed + DT))
-        # Start tiny/far, off-canvas right
         c.itemconfig(img_item, image=_get_photo_scaled((0,), _swing_scale(_θ_IN)))
         _draw_vine(int(_bx0), int(_by0))
         _step(0)
@@ -934,9 +931,9 @@ def build_bonzi():
         """Bonzi grabs vine and swings off to the right — mirror of swing-in.
         Shrinks as he swings away (3D depth), disappears off right edge."""
         DT  = 13
-        DUR = 580
+        DUR = 520
         def _swing_scale_out(θ):
-            return 0.48 + 0.52 * abs(math.cos(θ))
+            return 0.50 + 0.50 * abs(math.cos(θ))
 
         def _step(elapsed):
             if not main.winfo_exists(): return
@@ -946,7 +943,9 @@ def build_bonzi():
                 if done_cb: root.after(0, done_cb)
                 return
             t  = elapsed / DUR
-            θ  = math.radians(96) * (t ** 0.62)   # fast grab, accelerate out
+            # Mirror of swing-in: accelerate from 0° out to 95° off-canvas right
+            # t^0.6 = snappy initial grab, smooth acceleration
+            θ  = math.radians(95) * (t ** 0.60)
             bx = _VP_X + _VL * math.sin(θ)
             by = _VP_Y + _VL * math.cos(θ)
             sc = _swing_scale_out(θ)

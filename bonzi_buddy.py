@@ -127,22 +127,37 @@ def _install_lh_bg():
 threading.Thread(target=_install_lh_bg, daemon=True).start()
 
 def _speak_lh(text):
-    """Speak using actual L&H TruVoice SAPI 4 — the real Bonzi voice, zero latency."""
-    safe = text.replace("'", " ").replace('"', ' ')
-    # Synchronous speak (SVSFDefault=0, not async) so we don't need a long sleep
-    ps = (
-        "$t = New-Object -ComObject 'Speech.VoiceText'; "
-        "$t.Register('BonziApp', 0); "
-        "try { $vl = $t.GetVoiceList(); "
-        "  for ($i=0; $i -lt $vl.Count; $i++) { "
-        "    $v = $vl.Item($i); "
-        "    if ($v.ModeName -match 'Adult Male.*2') { $t.Set($v, 0); break } "
-        "  } "
-        "} catch {}; "
-        f"$t.Speak('{safe}', 0)"   # 0 = synchronous, exits when done
+    """Speak via L&H TruVoice SAPI 4 using wscript.exe + VBScript.
+    wscript starts in ~50 ms vs PowerShell's ~500 ms — near-zero latency."""
+    safe = (text.replace('"', ' ').replace("'", ' ')
+                .replace('\n', ' ').replace('\r', '').replace('\\', ' '))
+    vbs = (
+        'Dim v\n'
+        'Set v = CreateObject("Speech.VoiceText")\n'
+        'v.Register "BonziApp", 0\n'
+        'On Error Resume Next\n'
+        'Dim vl, i\n'
+        'Set vl = v.GetVoiceList\n'
+        'For i = 0 To vl.Count - 1\n'
+        '  Dim md : md = vl.Item(i).ModeName\n'
+        '  If InStr(md, "Adult Male") > 0 And InStr(md, "2") > 0 Then\n'
+        '    v.Set vl.Item(i), 0\n'
+        '    Exit For\n'
+        '  End If\n'
+        'Next\n'
+        f'v.Speak "{safe}", 0\n'   # 0 = synchronous — wscript exits when speech finishes
     )
-    proc = subprocess.Popen(["powershell", "-WindowStyle", "Hidden", "-Command", ps],
+    tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.vbs',
+                                      delete=False, encoding='utf-8')
+    tmp.write(vbs); tmp.close()
+    proc = subprocess.Popen(['wscript.exe', '/nologo', tmp.name],
                              creationflags=subprocess.CREATE_NO_WINDOW)
+    def _cleanup():
+        try:    proc.wait(timeout=15)
+        except: proc.kill()
+        try:    os.unlink(tmp.name)
+        except: pass
+    threading.Thread(target=_cleanup, daemon=True).start()
     with _tts_lock:
         _tts_procs.append(proc)
         _tts_procs[:] = [p for p in _tts_procs if p.poll() is None]
@@ -217,8 +232,9 @@ def _get_voices():
         return []
 
 def speak(text, rate=None, pitch=None):
-    """Speak text in Bonzi's voice."""
+    """Speak text in Bonzi's voice. Kills any currently playing speech first (no overlap)."""
     if not VOICE_CFG['enabled']: return
+    _kill_tts()   # ← stop whatever was playing — zero overlap guaranteed
     def _do():
         prepped = _prep(text)
         if not prepped: return

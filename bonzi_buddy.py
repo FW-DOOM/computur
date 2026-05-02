@@ -145,7 +145,10 @@ def _speak_lh(text):
         '    Exit For\n'
         '  End If\n'
         'Next\n'
-        f'v.Speak "{safe}", 0\n'   # 0 = synchronous — wscript exits when speech finishes
+        # \Pit=50\ = pitch 50 (low/deep — the iconic Bonzi voice register)
+        # \Spd=160\ = speaking rate (brisk, like real Bonzi)
+        # Embedded L&H SAPI4 control tags must be FIRST in the string
+        f'v.Speak "\\Pit=50\\\\Spd=160\\{safe}", 0\n'   # 0 = sync
     )
     tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.vbs',
                                       delete=False, encoding='utf-8')
@@ -457,6 +460,29 @@ def _get_photo(indices):
         composite.save(buf, format='PNG')
         buf.seek(0)
         # tk.PhotoImage natively supports PNG alpha in tkinter 8.6+
+        _photo_cache[key] = tk.PhotoImage(
+            data=base64.b64encode(buf.read()).decode('ascii'))
+    return _photo_cache[key]
+
+def _get_photo_scaled(indices, scale):
+    """Like _get_photo but resizes the composite to `scale` × full size.
+    Used by the vine swing to create real 3D perspective (smaller when far,
+    larger when close — exactly how the original Bonzi Buddy looked).
+    scale is quantised to 0.04 steps so cache stays small (~15 entries)."""
+    scale = max(0.28, min(1.0, round(scale / 0.04) * 0.04))
+    key   = (tuple(indices), scale)
+    if key not in _photo_cache:
+        composite = Image.new('RGBA', (IMG_W, IMG_H), (0, 0, 0, 0))
+        for idx in indices:
+            layer = _get_rgba(idx)
+            composite = Image.alpha_composite(composite, layer)
+        if scale != 1.0:
+            nw = max(1, int(IMG_W * scale))
+            nh = max(1, int(IMG_H * scale))
+            composite = composite.resize((nw, nh), Image.LANCZOS)
+        buf = io.BytesIO()
+        composite.save(buf, format='PNG')
+        buf.seek(0)
         _photo_cache[key] = tk.PhotoImage(
             data=base64.b64encode(buf.read()).decode('ascii'))
     return _photo_cache[key]
@@ -871,31 +897,47 @@ def build_bonzi():
           ζ=3.1  — medium damping (overshoot left, back, settle)
           ω=1.35π — slightly above natural freq for peppy entry
         Total time ~1150 ms at 14 ms ticks (~82 fps)."""
-        DT  = 14   # ms per tick
-        DUR = 1150 # total ms
+        DT  = 14   # ms per tick (~71 fps)
+        DUR = 1200 # total ms
+        def _swing_scale(θ):
+            """3D perspective: full-size at bottom (θ≈0), small when far (θ≈92°).
+            scale = 0.48 + 0.52 * cos(θ)  →  cos(0°)=1.0 → scale=1.0
+                                            →  cos(90°)=0  → scale=0.48"""
+            return 0.48 + 0.52 * abs(math.cos(θ))
+
         def _step(elapsed):
             if not main.winfo_exists(): return
             if elapsed >= DUR:
+                # Settle: restore full-size at rest position
+                c.itemconfig(img_item, image=_get_photo((0,)))
                 c.coords(img_item, IMG_CX, IMG_CY)
                 _draw_vine(IMG_CX, IMG_CY)
                 main.after(380, lambda: c.delete('vine') if main.winfo_exists() else None)
                 if done_cb: main.after(480, done_cb)
                 return
-            t  = elapsed / DUR                              # normalised 0→1
+            t  = elapsed / DUR
             θ  = _θ_IN * math.exp(-t * 3.1) * math.cos(math.pi * t * 1.35)
             bx = _VP_X + _VL * math.sin(θ)
             by = _VP_Y + _VL * math.cos(θ)
+            # Scale sprite for 3D depth illusion
+            sc = _swing_scale(θ)
+            c.itemconfig(img_item, image=_get_photo_scaled((0,), sc))
             c.coords(img_item, int(bx), int(by))
             _draw_vine(int(bx), int(by))
             main.after(DT, lambda: _step(elapsed + DT))
+        # Start tiny/far, off-canvas right
+        c.itemconfig(img_item, image=_get_photo_scaled((0,), _swing_scale(_θ_IN)))
         _draw_vine(int(_bx0), int(_by0))
         _step(0)
 
     def _canvas_swing_out(done_cb=None):
-        """Bonzi grabs the vine and swings off to the right — mirror of swing-in.
-        Accelerates outward, exits off the right edge, then window hides."""
-        DT  = 13   # ms per tick — slightly faster than in, feels more decisive
-        DUR = 560  # total ms — quick exit
+        """Bonzi grabs vine and swings off to the right — mirror of swing-in.
+        Shrinks as he swings away (3D depth), disappears off right edge."""
+        DT  = 13
+        DUR = 580
+        def _swing_scale_out(θ):
+            return 0.48 + 0.52 * abs(math.cos(θ))
+
         def _step(elapsed):
             if not main.winfo_exists(): return
             if elapsed >= DUR:
@@ -903,16 +945,15 @@ def build_bonzi():
                 main.withdraw()
                 if done_cb: root.after(0, done_cb)
                 return
-            t  = elapsed / DUR              # 0 → 1
-            # Swing out to the right: start at 0°, accelerate to ~95° (off-canvas)
-            # t^0.65 = fast start (snappy grab) then eases into full extension
-            θ  = math.radians(95) * (t ** 0.65)
+            t  = elapsed / DUR
+            θ  = math.radians(96) * (t ** 0.62)   # fast grab, accelerate out
             bx = _VP_X + _VL * math.sin(θ)
             by = _VP_Y + _VL * math.cos(θ)
+            sc = _swing_scale_out(θ)
+            c.itemconfig(img_item, image=_get_photo_scaled((0,), sc))
             c.coords(img_item, int(bx), int(by))
             _draw_vine(int(bx), int(by))
             main.after(DT, lambda: _step(elapsed + DT))
-        # Draw vine at current Bonzi position before starting
         coords = c.coords(img_item)
         if coords:
             _draw_vine(int(coords[0]), int(coords[1]))

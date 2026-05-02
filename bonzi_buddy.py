@@ -9,7 +9,7 @@ Secret exit  : type 4308
 Restore Bonzi: type 1111  (after right-click Hide)
 """
 import tkinter as tk
-import random, threading, time, base64, io, sys, subprocess, os, tempfile, shutil, re
+import random, threading, time, base64, io, sys, subprocess, os, tempfile, shutil, re, math
 import ctypes, ctypes.wintypes
 
 # -- Auto-install Pillow -------------------------------------------------------
@@ -28,13 +28,75 @@ SH = user32.GetSystemMetrics(1)
 from bonzi_b64 import FRAMES   # dict: int -> base64 str
 
 # -- Voice engine ---------------------------------------------------------------
-# Original Bonzi used Lernout & Hauspie TruVoice "Adult Male #2" (SAPI 4).
-# Best modern match: eSpeak NG with tuned settings.
-# Key to sounding like Bonzi:
-#   - Fast cadence (~200 wpm, NOT 150 default)
-#   - Slightly raised pitch (variant en+m3, pitch 55)
-#   - Amplitude 200 for punchy delivery
-#   - Pronunciation preprocessing (BonziBUDDY → Bonzee Buddy, strip emojis, etc.)
+# Priority chain:
+#   1. L&H TruVoice SAPI 4   — the ACTUAL Bonzi Buddy voice (auto-installs from archive.org)
+#   2. eSpeak NG              — closest robotic alternative (winget install eSpeak.eSpeakNG)
+#   3. Windows SAPI 5         — last resort fallback
+
+# ── L&H TruVoice auto-installer ───────────────────────────────────────────────
+import winreg, urllib.request
+
+_LH_VOICE = [False]   # set True once verified installed
+
+_LH_DL_URLS = [
+    # Multiple archive.org mirrors — tries each until one works
+    'https://archive.org/download/lernout-and-hauspie-tts-3.0/LHTTSInst.exe',
+    'https://archive.org/download/lernout-hauspie-tts/LHTTSInst.exe',
+    'https://archive.org/download/lh-tts-voices/LHTTSInst.exe',
+    'https://archive.org/download/bonzibuddy-lhtts/LHTTSInst.exe',
+]
+
+def _check_lh():
+    """Return True if L&H TruVoice SAPI 4 is registered on this machine."""
+    try:
+        winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                       r'SOFTWARE\Lernout & Hauspie\TruVoice')
+        _LH_VOICE[0] = True
+        return True
+    except:
+        pass
+    try:
+        winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                       r'SOFTWARE\WOW6432Node\Lernout & Hauspie\TruVoice')
+        _LH_VOICE[0] = True
+        return True
+    except:
+        return False
+
+def _install_lh_bg():
+    """Background thread: silently download + install L&H TruVoice."""
+    if _check_lh(): return
+    tmp = os.path.join(tempfile.gettempdir(), 'LHTTSInst.exe')
+    for url in _LH_DL_URLS:
+        try:
+            urllib.request.urlretrieve(url, tmp)
+            if os.path.getsize(tmp) < 50000: continue   # too small = 404 page
+            subprocess.run([tmp, '/S', '/SILENT', '/NORESTART'],
+                           timeout=120, creationflags=subprocess.CREATE_NO_WINDOW)
+            if _check_lh(): break
+        except: continue
+    try: os.unlink(tmp)
+    except: pass
+
+threading.Thread(target=_install_lh_bg, daemon=True).start()
+
+def _speak_lh(text):
+    """Speak using actual L&H TruVoice SAPI 4 (the real Bonzi voice)."""
+    safe = text.replace("'", " ").replace('"', ' ')
+    # PowerShell COM access to SAPI 4 Speech.VoiceText
+    ps = (
+        "$t = New-Object -ComObject 'Speech.VoiceText'; "
+        "$t.Register('BonziApp', 0); "
+        "try { $vl = $t.GetVoiceList(); "
+        "  for ($i=0; $i -lt $vl.Count; $i++) { "
+        "    $v = $vl.Item($i); "
+        "    if ($v.ModeName -match 'Adult Male.*2') { $t.Set($v, 0); break } "
+        "  } "
+        "} catch {}; "
+        f"$t.Speak('{safe}', 1); Start-Sleep -s 12"
+    )
+    subprocess.Popen(["powershell", "-WindowStyle", "Hidden", "-Command", ps],
+                     creationflags=subprocess.CREATE_NO_WINDOW)
 
 def _find_espeak():
     for p in [r'C:\Program Files\eSpeak NG\espeak-ng.exe',
@@ -112,7 +174,14 @@ def speak(text, rate=None, pitch=None):
         prepped = _prep(text)
         if not prepped: return
 
-        # ── eSpeak NG (primary) ──────────────────────────────────────────
+        # ── L&H TruVoice SAPI 4 — the REAL Bonzi voice ──────────────────
+        if _LH_VOICE[0]:
+            try:
+                _speak_lh(prepped)
+                return
+            except: pass
+
+        # ── eSpeak NG (primary fallback) ─────────────────────────────────
         if VOICE_CFG['engine'] == 'espeak' and ESPEAK_PATH:
             try:
                 subprocess.Popen(
@@ -385,7 +454,11 @@ def _kb(n, w, l):
                     if m is not None:
                         try:
                             if m.winfo_exists():
-                                m.deiconify(); m.attributes('-topmost', True); return
+                                fx = max(20, SW//2 - CW//2)
+                                fy = max(20, SH//2 - CH//2)
+                                m.attributes('-topmost', True)
+                                _vine_swing_in(m, fx, fy)
+                                return
                         except: pass
                     build_bonzi()
                 root.after(0, _restore)
@@ -641,6 +714,89 @@ SCRIPT=[
     ('Just click the DELETE button below!',                2400, 'gesture'),
 ]
 
+# -- Blue background + vine swing ---------------------------------------------
+
+def _draw_bonzi_bg(canvas):
+    """Draw the iconic Bonzi Buddy blue gradient background box."""
+    canvas.delete('bonzi_bg')
+    x1, y1, x2, y2 = 14, 84, CW - 14, CH - 90
+    h = y2 - y1
+    steps = 30
+    for i in range(steps):
+        t = i / (steps - 1)
+        # #4D8FE0  →  #0F3D8C  (bright sky-blue → deep royal blue)
+        r = int(0x4D * (1-t) + 0x0F * t)
+        g = int(0x8F * (1-t) + 0x3D * t)
+        b = int(0xE0 * (1-t) + 0x8C * t)
+        color = f'#{r:02x}{g:02x}{b:02x}'
+        sy1 = y1 + int(h * i / steps)
+        sy2 = y1 + int(h * (i + 1) / steps) + 1
+        canvas.create_rectangle(x1, sy1, x2, sy2,
+                                 fill=color, outline='', tags='bonzi_bg')
+    # Highlight stripe along top edge
+    canvas.create_rectangle(x1, y1, x2, y1 + 3,
+                             fill='#88BBFF', outline='', tags='bonzi_bg')
+    # Border
+    canvas.create_rectangle(x1, y1, x2, y2,
+                             fill='', outline='#0A2A6E', width=2, tags='bonzi_bg')
+
+def _vine_swing_in(main, fx, fy, done_cb=None):
+    """Swing Bonzi into view from the right on a vine (pendulum arc)."""
+    cx = fx + CW // 2       # window centre x at rest
+    cy = fy + CH // 2       # window centre y at rest
+    pivot_y = -80           # vine attach point (above top of screen)
+    vine_L  = cy - pivot_y  # vine length
+    pivot_x = cx            # pivot directly above final position
+
+    θ0 = math.radians(72)   # starting angle (off-screen right)
+    frames = 55
+
+    def _step(i):
+        if not main.winfo_exists(): return
+        if i >= frames:
+            main.geometry(f'+{fx}+{fy}')
+            if done_cb: root.after(0, done_cb)
+            return
+        t = i / frames
+        # Damped pendulum: θ decays exponentially, oscillates twice
+        θ = θ0 * math.exp(-t * 2.8) * math.cos(math.pi * t * 1.1)
+        wx = int(pivot_x + vine_L * math.sin(θ) - CW // 2)
+        wy = int(pivot_y + vine_L * math.cos(θ) - CH // 2)
+        main.geometry(f'+{wx}+{wy}')
+        main.after(16, lambda: _step(i + 1))
+
+    # Place Bonzi at the start position (off-screen right) then show
+    wx0 = int(pivot_x + vine_L * math.sin(θ0) - CW // 2)
+    wy0 = int(pivot_y + vine_L * math.cos(θ0) - CH // 2)
+    main.geometry(f'{CW}x{CH}+{wx0}+{wy0}')
+    main.deiconify()
+    main.after(40, lambda: _step(0))
+
+def _vine_swing_out(main, done_cb=None):
+    """Swing Bonzi off-screen to the left (Tarzan-style exit)."""
+    cx      = main.winfo_x() + CW // 2
+    cy      = main.winfo_y() + CH // 2
+    pivot_y = -80
+    vine_L  = cy - pivot_y
+    pivot_x = cx
+    frames  = 35
+
+    def _step(i):
+        if not main.winfo_exists(): return
+        if i >= frames:
+            main.withdraw()
+            if done_cb: root.after(0, done_cb)
+            return
+        t = i / frames
+        # Accelerate to the left (negative angle)
+        θ = -math.radians(85) * (t ** 1.4)
+        wx = int(pivot_x + vine_L * math.sin(θ) - CW // 2)
+        wy = int(pivot_y + vine_L * math.cos(θ) - CH // 2)
+        main.geometry(f'+{wx}+{wy}')
+        main.after(14, lambda: _step(i + 1))
+
+    _step(0)
+
 # -- Main BonziBUDDY window ---------------------------------------------------
 def build_bonzi():
     main = tk.Toplevel()
@@ -653,12 +809,17 @@ def build_bonzi():
 
     sx = max(20, SW//2 - CW//2)
     sy = max(20, SH//2 - CH//2)
-    main.geometry(f'{CW}x{CH}+{sx}+{sy}')
+    # Start off-screen — swing_in will move it into place
+    main.geometry(f'{CW}x{CH}+{SW+100}+{sy}')
+    main.withdraw()   # hide until vine swing starts
 
     c = tk.Canvas(main, width=CW, height=CH, bg=CHROMA, highlightthickness=0)
     c.pack()
 
-    # Place Bonzi image
+    # Blue gradient background (must be created BEFORE img_item so it sits behind)
+    _draw_bonzi_bg(c)
+
+    # Place Bonzi image (on top of background)
     img_item = c.create_image(IMG_CX, IMG_CY, anchor='center', image=_get_photo((0,)))
     update_bubble(c, 'Loading BonziBUDDY...')
 
@@ -799,7 +960,9 @@ def build_bonzi():
         main.after(800, open_file_cleaner)
     def do_about():
         update_bubble(c, random.choice(ABOUT_LINES)); _play(ANIM_GESTURE, done=_start_idle)
-    def _hide(): main.withdraw()
+    def _hide():
+        speak('See ya!', rate=1)
+        _vine_swing_out(main)
 
     menu.add_command(label='\U0001f4ac  Tell me a fact!',     command=do_fact)
     menu.add_command(label='❓  Trivia!',                     command=do_trivia)
@@ -881,7 +1044,11 @@ def build_bonzi():
 
         _play(anim_seq, done=_after_anim)
 
-    main.after(900, _next_line)
+    # -- Vine swing in, then start script --------------------------------------
+    def _after_swing_in():
+        main.after(200, _next_line)
+
+    main.after(120, lambda: _vine_swing_in(main, sx, sy, done_cb=_after_swing_in))
 
 # -- Entry point --------------------------------------------------------------
 root = tk.Tk()

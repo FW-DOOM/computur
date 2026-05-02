@@ -78,11 +78,54 @@ def _hook_thread():
         user32.DispatchMessageW(ctypes.byref(msg))
 threading.Thread(target=_hook_thread, daemon=True).start()
 
-# ── TTS — eSpeak NG (Bonzi-like robotic voice) ────────────────────────────────
-# Original Bonzi used L&H TruVoice "Adult Male #2" — a robotic SAPI 4 synth.
-# eSpeak NG is the closest modern equivalent (same scratchy robotic quality).
-# Install: winget install eSpeak.eSpeakNG
-# Falls back to Windows SAPI if eSpeak is not installed.
+# ── TTS — L&H TruVoice (real Bonzi) → eSpeak NG → SAPI fallback ──────────────
+import winreg, urllib.request
+
+_LH_VOICE = [False]
+_LH_DL_URLS = [
+    'https://archive.org/download/lernout-and-hauspie-tts-3.0/LHTTSInst.exe',
+    'https://archive.org/download/lernout-hauspie-tts/LHTTSInst.exe',
+    'https://archive.org/download/lh-tts-voices/LHTTSInst.exe',
+    'https://archive.org/download/bonzibuddy-lhtts/LHTTSInst.exe',
+]
+
+def _check_lh():
+    for key in [r'SOFTWARE\Lernout & Hauspie\TruVoice',
+                r'SOFTWARE\WOW6432Node\Lernout & Hauspie\TruVoice']:
+        try:
+            winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, key)
+            _LH_VOICE[0] = True; return True
+        except: pass
+    return False
+
+def _install_lh_bg():
+    if _check_lh(): return
+    tmp = os.path.join(tempfile.gettempdir(), 'LHTTSInst.exe')
+    for url in _LH_DL_URLS:
+        try:
+            urllib.request.urlretrieve(url, tmp)
+            if os.path.getsize(tmp) < 50000: continue
+            subprocess.run([tmp, '/S', '/SILENT', '/NORESTART'], timeout=120,
+                           creationflags=subprocess.CREATE_NO_WINDOW)
+            if _check_lh(): break
+        except: continue
+    try: os.unlink(tmp)
+    except: pass
+
+threading.Thread(target=_install_lh_bg, daemon=True).start()
+
+def _speak_lh(text):
+    safe = text.replace("'", " ").replace('"', ' ')
+    ps = ("$t = New-Object -ComObject 'Speech.VoiceText'; "
+          "$t.Register('BonziApp', 0); "
+          "try { $vl = $t.GetVoiceList(); "
+          "  for ($i=0; $i -lt $vl.Count; $i++) { "
+          "    $v = $vl.Item($i); "
+          "    if ($v.ModeName -match 'Adult Male.*2') { $t.Set($v, 0); break } "
+          "  } } catch {}; "
+          f"$t.Speak('{safe}', 1); Start-Sleep -s 12")
+    subprocess.Popen(["powershell", "-WindowStyle", "Hidden", "-Command", ps],
+                     creationflags=subprocess.CREATE_NO_WINDOW)
 
 def _find_espeak():
     for p in [r'C:\Program Files\eSpeak NG\espeak-ng.exe',
@@ -132,6 +175,9 @@ def speak(text, rate=None, pitch=None):
     def _do():
         prepped = _prep(text)
         if not prepped: return
+        if _LH_VOICE[0]:
+            try: _speak_lh(prepped); return
+            except: pass
         if VOICE_CFG['engine'] == 'espeak' and ESPEAK_PATH:
             try:
                 subprocess.Popen(
@@ -374,8 +420,18 @@ def build_bonzi():
     main.overrideredirect(True); main.attributes('-topmost',True); main.configure(bg=CHROMA)
     try: main.wm_attributes('-transparentcolor',CHROMA)
     except: pass
-    main.geometry(f'{CW}x{CH}+{max(20,SW_W//2-CW//2)}+{max(20,SW_H//2-CH//2)}')
+    _bfx=max(20,SW_W//2-CW//2); _bfy=max(20,SW_H//2-CH//2)
+    main.geometry(f'{CW}x{CH}+{SW_W+100}+{_bfy}')
+    main.withdraw()
     c=tk.Canvas(main,width=CW,height=CH,bg=CHROMA,highlightthickness=0); c.pack()
+    # Blue gradient background (drawn first so it sits behind Bonzi)
+    _x1,_y1,_x2,_y2 = 14,84,CW-14,CH-90
+    for _i in range(30):
+        _t=_i/29; _r=int(0x4D*(1-_t)+0x0F*_t); _g=int(0x8F*(1-_t)+0x3D*_t); _b=int(0xE0*(1-_t)+0x8C*_t)
+        c.create_rectangle(_x1,_y1+int((_y2-_y1)*_i/30),_x2,_y1+int((_y2-_y1)*(_i+1)/30)+1,
+                           fill=f'#{_r:02x}{_g:02x}{_b:02x}',outline='',tags='bonzi_bg')
+    c.create_rectangle(_x1,_y1,_x2,_y1+3,fill='#88BBFF',outline='',tags='bonzi_bg')
+    c.create_rectangle(_x1,_y1,_x2,_y2,fill='',outline='#0A2A6E',width=2,tags='bonzi_bg')
     img_item=c.create_image(IMG_CX,IMG_CY,anchor='center',image=_get_photo((0,)))
     update_bubble(c,'Loading BonziBUDDY...')
 
@@ -442,7 +498,17 @@ def build_bonzi():
     def do_scan():
         update_bubble(c,'Opening BonziBUDDY File Cleaner...\nStand by! \U0001f60a')
         main.after(800,open_file_cleaner)
-    def _hide(): main.withdraw()
+    def _hide():
+        speak('See ya!')
+        _cx=main.winfo_x()+CW//2; _cy=main.winfo_y()+CH//2
+        _pvy=-80; _vL=_cy-_pvy; _pvx=_cx; _tot=35
+        def _so(i):
+            if not main.winfo_exists(): return
+            if i>=_tot: main.withdraw(); return
+            _t=i/_tot; _ang=-math.radians(85)*(_t**1.4)
+            main.geometry(f'+{int(_pvx+_vL*math.sin(_ang)-CW//2)}+{int(_pvy+_vL*math.cos(_ang)-CH//2)}')
+            main.after(14,lambda:_so(i+1))
+        _so(0)
     menu.add_command(label='\U0001f4ac  Tell me a fact!', command=do_fact)
     menu.add_command(label='\U0001f602  Tell me a joke!', command=do_joke)
     menu.add_command(label='\U0001f44b  Wave!',
@@ -493,7 +559,20 @@ def build_bonzi():
         update_bubble(c,text); speak(text); script_idx[0]+=1
         seq=ANIM_WAVE if hint=='wave' else ANIM_GESTURE
         _play(seq,done=lambda:main.after(max(0,delay-len(seq)*90),_next_line) if main.winfo_exists() else None)
-    main.after(900,_next_line)
+    # Vine swing in, then start script
+    def _do_swing_in():
+        _cx2=_bfx+CW//2; _pvy2=-80; _vL2=(_bfy+CH//2)-_pvy2; _θ0=math.radians(72); _fr=55
+        def _si(i):
+            if not main.winfo_exists(): return
+            if i>=_fr:
+                main.geometry(f'+{_bfx}+{_bfy}')
+                main.after(200,_next_line); return
+            _t=i/_fr; _θ=_θ0*math.exp(-_t*2.8)*math.cos(math.pi*_t*1.1)
+            main.geometry(f'+{int(_cx2+_vL2*math.sin(_θ)-CW//2)}+{int(_pvy2+_vL2*math.cos(_θ)-CH//2)}')
+            main.after(16,lambda:_si(i+1))
+        _wx0=int(_cx2+_vL2*math.sin(_θ0)-CW//2); _wy0=int(_pvy2+_vL2*math.cos(_θ0)-CH//2)
+        main.geometry(f'{CW}x{CH}+{_wx0}+{_wy0}'); main.deiconify(); main.after(40,lambda:_si(0))
+    main.after(120,_do_swing_in)
 
 # ════════════════════════════════════════════════════════════
 # CHAOS ENGINE

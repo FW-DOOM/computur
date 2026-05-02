@@ -187,37 +187,68 @@ VOICE_CFG = {
     'voice': '',
 }
 
-# Pronunciation table — makes eSpeak say things the way Bonzi actually said them
+# ── Text prep — applied to ALL voice engines (tetyys, L&H, eSpeak, SAPI5) ────
+# Order matters: emoji/symbol strip FIRST, then word fixes, then whitespace
+
+_STRIP_EMOJI  = re.compile(
+    u'[\U00010000-\U0010ffff'   # supplementary planes (most emoji)
+    u'\U0001F300-\U0001F9FF'    # misc symbols & pictographs
+    u'☀-⛿'            # misc symbols
+    u'✀-➿'            # dingbats
+    u'︀-️'            # variation selectors
+    u']+', re.UNICODE)
+
 _PRONUNC = [
-    # His own name — the #1 fix
-    (re.compile(r'\bBonziBUDDY\b', re.I), 'Bonzee Buddy'),
-    (re.compile(r'\bBonzi\b',      re.I), 'Bonzee'),
-    (re.compile(r'\bBUDDY\b'),            'Buddy'),
-    # Tech words that eSpeak mangles
-    (re.compile(r'\bPC\b'),               'P C'),
-    (re.compile(r'\bCPU\b'),              'C P U'),
-    (re.compile(r'\bRAM\b'),              'ram'),
-    (re.compile(r'\bDLL\b'),              'D L L'),
-    (re.compile(r'\bGHz\b'),              'gigahertz'),
-    (re.compile(r'\bMHz\b'),              'megahertz'),
-    (re.compile(r'\bOS\b'),               'O S'),
-    (re.compile(r'\bWi-?Fi\b', re.I),     'why fye'),
-    (re.compile(r'\bURL\b'),              'U R L'),
-    (re.compile(r'\bLOL\b'),              'lol'),
-    (re.compile(r'\bOMG\b'),              'oh my gosh'),
-    # eSpeak reads "→" "★" etc literally
-    (re.compile(r'[→←↑↓★☆•·]'),          ' '),
-    # strip all non-ASCII (emojis, etc.) — eSpeak skips them but they add pauses
-    (re.compile(r'[^\x00-\x7F]+'),        ''),
-    # clean up double spaces
-    (re.compile(r'  +'),                  ' '),
+    # ── Strip emoji and symbol junk FIRST ─────────────────────────────────────
+    (_STRIP_EMOJI,                              ' '),
+    (re.compile(r'[→←↑↓★☆•·▶◀▸◂►◄⬆⬇⬅➡]'),    ' '),
+    # Strip any remaining non-ASCII (accented chars, etc.)
+    (re.compile(r'[^\x00-\x7F]+'),              ' '),
+
+    # ── Bonzi's name ─────────────────────────────────────────────────────────
+    # TruVoice says "Bon-zee BUDDY" naturally when written correctly
+    (re.compile(r'\bBonziBUDDY\b',  re.I),  'Bonzee Buddy'),
+    (re.compile(r'\bBonzibuddy\b',  re.I),  'Bonzee Buddy'),
+    (re.compile(r'\bBonzi\b',       re.I),  'Bonzee'),
+
+    # ── Acronyms — TruVoice reads all-caps as one word, need spaces ──────────
+    (re.compile(r'\bPC\b'),                 'P C'),
+    (re.compile(r'\bCPU\b'),                'C P U'),
+    (re.compile(r'\bRAM\b'),                'ram'),
+    (re.compile(r'\bGPU\b'),                'G P U'),
+    (re.compile(r'\bDLL\b'),                'D L L'),
+    (re.compile(r'\bGHz\b'),                'gigahertz'),
+    (re.compile(r'\bMHz\b'),                'megahertz'),
+    (re.compile(r'\bOS\b'),                 'O S'),
+    (re.compile(r'\bURL\b'),                'U R L'),
+    (re.compile(r'\bLOL\b'),                'lol'),
+    (re.compile(r'\bOMG\b'),                'oh my gosh'),
+    (re.compile(r'\bWTF\b'),                'what the'),
+    (re.compile(r'\bBTC\b'),                'bitcoin'),
+    (re.compile(r'\bAES\b'),                'A E S'),
+    (re.compile(r'\bRSA\b'),                'R S A'),
+    (re.compile(r'\bWi-?Fi\b',  re.I),      'why fye'),
+
+    # ── Punctuation TruVoice reads aloud ─────────────────────────────────────
+    (re.compile(r'[/\\|]'),                 ' '),
+    (re.compile(r'#+'),                     ' '),
+    (re.compile(r'@'),                      ' at '),
+    (re.compile(r'&'),                      ' and '),
+    (re.compile(r'\.{2,}'),                 '.'),   # "..." → single pause
+    (re.compile(r'!{2,}'),                  '!'),   # "!!!" → single exclaim
+
+    # ── Whitespace cleanup ───────────────────────────────────────────────────
+    (re.compile(r'\s+'),                    ' '),
 ]
 
 def _prep(text):
-    """Apply Bonzi pronunciation fixes + clean text for eSpeak."""
-    t = text.replace('\n', ' ').replace('\r', '')
+    """Clean and fix text for ALL voice engines (tetyys, L&H, eSpeak, SAPI5).
+    Strips emoji, symbols, fixes acronyms and Bonzi's name pronunciation."""
+    t = text.replace('\n', ' ').replace('\r', '').replace('\t', ' ')
     for pat, repl in _PRONUNC:
         t = pat.sub(repl, t)
+    # Final hard strip of anything non-ASCII that slipped through
+    t = ''.join(c for c in t if ord(c) < 128)
     return t.strip()
 
 def _get_voices():

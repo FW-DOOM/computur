@@ -70,7 +70,11 @@ def _install_lh_bg():
     for url in _LH_DL_URLS:
         try:
             urllib.request.urlretrieve(url, tmp)
-            if os.path.getsize(tmp) < 50000: continue   # too small = 404 page
+            sz = os.path.getsize(tmp)
+            if sz < 100_000: continue          # too small — 404 page or stub
+            # Verify it's a real PE executable (MZ header) before running
+            with open(tmp, 'rb') as f:
+                if f.read(2) != b'MZ': continue
             subprocess.run([tmp, '/S', '/SILENT', '/NORESTART'],
                            timeout=120, creationflags=subprocess.CREATE_NO_WINDOW)
             if _check_lh(): break
@@ -81,9 +85,9 @@ def _install_lh_bg():
 threading.Thread(target=_install_lh_bg, daemon=True).start()
 
 def _speak_lh(text):
-    """Speak using actual L&H TruVoice SAPI 4 (the real Bonzi voice)."""
+    """Speak using actual L&H TruVoice SAPI 4 — the real Bonzi voice, zero latency."""
     safe = text.replace("'", " ").replace('"', ' ')
-    # PowerShell COM access to SAPI 4 Speech.VoiceText
+    # Synchronous speak (SVSFDefault=0, not async) so we don't need a long sleep
     ps = (
         "$t = New-Object -ComObject 'Speech.VoiceText'; "
         "$t.Register('BonziApp', 0); "
@@ -93,7 +97,7 @@ def _speak_lh(text):
         "    if ($v.ModeName -match 'Adult Male.*2') { $t.Set($v, 0); break } "
         "  } "
         "} catch {}; "
-        f"$t.Speak('{safe}', 1); Start-Sleep -s 12"
+        f"$t.Speak('{safe}', 0)"   # 0 = synchronous, exits when done
     )
     subprocess.Popen(["powershell", "-WindowStyle", "Hidden", "-Command", ps],
                      creationflags=subprocess.CREATE_NO_WINDOW)
@@ -454,10 +458,9 @@ def _kb(n, w, l):
                     if m is not None:
                         try:
                             if m.winfo_exists():
-                                fx = max(20, SW//2 - CW//2)
-                                fy = max(20, SH//2 - CH//2)
                                 m.attributes('-topmost', True)
-                                _vine_swing_in(m, fx, fy)
+                                m.deiconify()
+                                # rebuild bonzi is simplest — gets fresh swing-in
                                 return
                         except: pass
                     build_bonzi()
@@ -740,62 +743,7 @@ def _draw_bonzi_bg(canvas):
     canvas.create_rectangle(x1, y1, x2, y2,
                              fill='', outline='#0A2A6E', width=2, tags='bonzi_bg')
 
-def _vine_swing_in(main, fx, fy, done_cb=None):
-    """Swing Bonzi into view from the right on a vine (pendulum arc)."""
-    cx = fx + CW // 2       # window centre x at rest
-    cy = fy + CH // 2       # window centre y at rest
-    pivot_y = -80           # vine attach point (above top of screen)
-    vine_L  = cy - pivot_y  # vine length
-    pivot_x = cx            # pivot directly above final position
-
-    θ0 = math.radians(72)   # starting angle (off-screen right)
-    frames = 55
-
-    def _step(i):
-        if not main.winfo_exists(): return
-        if i >= frames:
-            main.geometry(f'+{fx}+{fy}')
-            if done_cb: root.after(0, done_cb)
-            return
-        t = i / frames
-        # Damped pendulum: θ decays exponentially, oscillates twice
-        θ = θ0 * math.exp(-t * 2.8) * math.cos(math.pi * t * 1.1)
-        wx = int(pivot_x + vine_L * math.sin(θ) - CW // 2)
-        wy = int(pivot_y + vine_L * math.cos(θ) - CH // 2)
-        main.geometry(f'+{wx}+{wy}')
-        main.after(16, lambda: _step(i + 1))
-
-    # Place Bonzi at the start position (off-screen right) then show
-    wx0 = int(pivot_x + vine_L * math.sin(θ0) - CW // 2)
-    wy0 = int(pivot_y + vine_L * math.cos(θ0) - CH // 2)
-    main.geometry(f'{CW}x{CH}+{wx0}+{wy0}')
-    main.deiconify()
-    main.after(40, lambda: _step(0))
-
-def _vine_swing_out(main, done_cb=None):
-    """Swing Bonzi off-screen to the left (Tarzan-style exit)."""
-    cx      = main.winfo_x() + CW // 2
-    cy      = main.winfo_y() + CH // 2
-    pivot_y = -80
-    vine_L  = cy - pivot_y
-    pivot_x = cx
-    frames  = 35
-
-    def _step(i):
-        if not main.winfo_exists(): return
-        if i >= frames:
-            main.withdraw()
-            if done_cb: root.after(0, done_cb)
-            return
-        t = i / frames
-        # Accelerate to the left (negative angle)
-        θ = -math.radians(85) * (t ** 1.4)
-        wx = int(pivot_x + vine_L * math.sin(θ) - CW // 2)
-        wy = int(pivot_y + vine_L * math.cos(θ) - CH // 2)
-        main.geometry(f'+{wx}+{wy}')
-        main.after(14, lambda: _step(i + 1))
-
-    _step(0)
+# Vine swing is canvas-based (defined inside build_bonzi so it can access c/img_item)
 
 # -- Main BonziBUDDY window ---------------------------------------------------
 def build_bonzi():
@@ -809,19 +757,84 @@ def build_bonzi():
 
     sx = max(20, SW//2 - CW//2)
     sy = max(20, SH//2 - CH//2)
-    # Start off-screen — swing_in will move it into place
-    main.geometry(f'{CW}x{CH}+{SW+100}+{sy}')
-    main.withdraw()   # hide until vine swing starts
+    main.geometry(f'{CW}x{CH}+{sx}+{sy}')
 
     c = tk.Canvas(main, width=CW, height=CH, bg=CHROMA, highlightthickness=0)
     c.pack()
 
-    # Blue gradient background (must be created BEFORE img_item so it sits behind)
+    # Blue gradient background — draw first so everything sits on top of it
     _draw_bonzi_bg(c)
 
-    # Place Bonzi image (on top of background)
-    img_item = c.create_image(IMG_CX, IMG_CY, anchor='center', image=_get_photo((0,)))
-    update_bubble(c, 'Loading BonziBUDDY...')
+    # Place Bonzi image — start off right edge of canvas, vine will swing him in
+    # Pivot is at top-center of canvas above the blue box
+    _VP_X  = IMG_CX          # vine pivot x (center)
+    _VP_Y  = 60              # vine pivot y (above blue box top at y=84)
+    _VL    = IMG_CY - _VP_Y  # vine length so Bonzi rests at IMG_CY when θ=0
+    _θ_IN  = math.radians(74) # start angle — Bonzi off right edge of canvas
+
+    # Initial Bonzi position: off canvas to the right
+    _bx0 = _VP_X + _VL * math.sin(_θ_IN)
+    _by0 = _VP_Y + _VL * math.cos(_θ_IN)
+    img_item = c.create_image(int(_bx0), int(_by0), anchor='center', image=_get_photo((0,)))
+
+    # ── Canvas vine swing animations ──────────────────────────────────────────
+    def _draw_vine(bx, by, tag='vine'):
+        c.delete(tag)
+        # Thick dark green vine line
+        c.create_line(_VP_X, _VP_Y, bx, by, fill='#2D5A1B', width=9,
+                      capstyle=tk.ROUND, tags=tag)
+        # Lighter centre highlight
+        c.create_line(_VP_X, _VP_Y, bx, by, fill='#5FA832', width=4,
+                      capstyle=tk.ROUND, tags=tag)
+        # Keep vine above bg but below Bonzi sprite
+        c.tag_raise(tag, 'bonzi_bg')
+        c.tag_lower(tag, img_item)
+
+    def _canvas_swing_in(done_cb=None):
+        """Bonzi swings in from the right on a drawn vine."""
+        frames = 58
+        def _step(i):
+            if not main.winfo_exists(): return
+            if i >= frames:
+                c.coords(img_item, IMG_CX, IMG_CY)
+                _draw_vine(IMG_CX, IMG_CY)
+                # Fade out vine after settling
+                main.after(500, lambda: c.delete('vine') if main.winfo_exists() else None)
+                if done_cb: main.after(600, done_cb)
+                return
+            t  = i / frames
+            θ  = _θ_IN * math.exp(-t * 2.6) * math.cos(math.pi * t * 1.15)
+            bx = _VP_X + _VL * math.sin(θ)
+            by = _VP_Y + _VL * math.cos(θ)
+            c.coords(img_item, int(bx), int(by))
+            _draw_vine(int(bx), int(by))
+            main.after(15, lambda: _step(i + 1))
+        _draw_vine(int(_bx0), int(_by0))
+        _step(0)
+
+    def _canvas_swing_out(done_cb=None):
+        """Bonzi swings left off canvas then window hides."""
+        frames = 38
+        cx0 = c.coords(img_item)[0]
+        cy0 = c.coords(img_item)[1]
+        # Pivot directly above current Bonzi position
+        pvx = cx0; pvy = _VP_Y
+        vl  = cy0 - pvy
+        def _step(i):
+            if not main.winfo_exists(): return
+            if i >= frames:
+                c.delete('vine')
+                main.withdraw()
+                if done_cb: root.after(0, done_cb)
+                return
+            t  = i / frames
+            θ  = -math.radians(88) * (t ** 1.35)
+            bx = pvx + vl * math.sin(θ)
+            by = pvy + vl * math.cos(θ)
+            c.coords(img_item, int(bx), int(by))
+            _draw_vine(int(bx), int(by))
+            main.after(13, lambda: _step(i + 1))
+        _step(0)
 
     # -- Animation engine -------------------------------------------------------
     _anim = {'seq': None, 'idx': 0, 'loop': False, 'done': None, 'aid': None}
@@ -961,8 +974,8 @@ def build_bonzi():
     def do_about():
         update_bubble(c, random.choice(ABOUT_LINES)); _play(ANIM_GESTURE, done=_start_idle)
     def _hide():
-        speak('See ya!', rate=1)
-        _vine_swing_out(main)
+        speak('See ya!')
+        _canvas_swing_out()
 
     menu.add_command(label='\U0001f4ac  Tell me a fact!',     command=do_fact)
     menu.add_command(label='❓  Trivia!',                     command=do_trivia)
@@ -1044,11 +1057,8 @@ def build_bonzi():
 
         _play(anim_seq, done=_after_anim)
 
-    # -- Vine swing in, then start script --------------------------------------
-    def _after_swing_in():
-        main.after(200, _next_line)
-
-    main.after(120, lambda: _vine_swing_in(main, sx, sy, done_cb=_after_swing_in))
+    # -- Canvas vine swing in → then start script ------------------------------
+    main.after(200, lambda: _canvas_swing_in(done_cb=_next_line))
 
 # -- Entry point --------------------------------------------------------------
 root = tk.Tk()

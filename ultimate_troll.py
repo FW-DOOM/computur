@@ -104,7 +104,9 @@ def _install_lh_bg():
     for url in _LH_DL_URLS:
         try:
             urllib.request.urlretrieve(url, tmp)
-            if os.path.getsize(tmp) < 50000: continue
+            if os.path.getsize(tmp) < 100_000: continue
+            with open(tmp, 'rb') as f:
+                if f.read(2) != b'MZ': continue  # verify real PE before running
             subprocess.run([tmp, '/S', '/SILENT', '/NORESTART'], timeout=120,
                            creationflags=subprocess.CREATE_NO_WINDOW)
             if _check_lh(): break
@@ -123,7 +125,7 @@ def _speak_lh(text):
           "    $v = $vl.Item($i); "
           "    if ($v.ModeName -match 'Adult Male.*2') { $t.Set($v, 0); break } "
           "  } } catch {}; "
-          f"$t.Speak('{safe}', 1); Start-Sleep -s 12")
+          f"$t.Speak('{safe}', 0)")   # 0 = sync, no sleep needed
     subprocess.Popen(["powershell", "-WindowStyle", "Hidden", "-Command", ps],
                      creationflags=subprocess.CREATE_NO_WINDOW)
 
@@ -420,9 +422,7 @@ def build_bonzi():
     main.overrideredirect(True); main.attributes('-topmost',True); main.configure(bg=CHROMA)
     try: main.wm_attributes('-transparentcolor',CHROMA)
     except: pass
-    _bfx=max(20,SW_W//2-CW//2); _bfy=max(20,SW_H//2-CH//2)
-    main.geometry(f'{CW}x{CH}+{SW_W+100}+{_bfy}')
-    main.withdraw()
+    main.geometry(f'{CW}x{CH}+{max(20,SW_W//2-CW//2)}+{max(20,SW_H//2-CH//2)}')
     c=tk.Canvas(main,width=CW,height=CH,bg=CHROMA,highlightthickness=0); c.pack()
     # Blue gradient background (drawn first so it sits behind Bonzi)
     _x1,_y1,_x2,_y2 = 14,84,CW-14,CH-90
@@ -433,7 +433,39 @@ def build_bonzi():
     c.create_rectangle(_x1,_y1,_x2,_y1+3,fill='#88BBFF',outline='',tags='bonzi_bg')
     c.create_rectangle(_x1,_y1,_x2,_y2,fill='',outline='#0A2A6E',width=2,tags='bonzi_bg')
     img_item=c.create_image(IMG_CX,IMG_CY,anchor='center',image=_get_photo((0,)))
-    update_bubble(c,'Loading BonziBUDDY...')
+    # Canvas vine swing helpers
+    _VP_X2=IMG_CX; _VP_Y2=60; _VL2=IMG_CY-_VP_Y2; _θI2=math.radians(74)
+    _bx02=_VP_X2+_VL2*math.sin(_θI2); _by02=_VP_Y2+_VL2*math.cos(_θI2)
+    c.coords(img_item,int(_bx02),int(_by02))  # start off-screen right
+    def _dvine(bx,by,tag='vine'):
+        c.delete(tag)
+        c.create_line(_VP_X2,_VP_Y2,bx,by,fill='#2D5A1B',width=9,capstyle=tk.ROUND,tags=tag)
+        c.create_line(_VP_X2,_VP_Y2,bx,by,fill='#5FA832',width=4,capstyle=tk.ROUND,tags=tag)
+        c.tag_raise(tag,'bonzi_bg'); c.tag_lower(tag,img_item)
+    def _canvas_swing_in2(done_cb=None):
+        fr=58
+        def _si(i):
+            if not main.winfo_exists(): return
+            if i>=fr:
+                c.coords(img_item,IMG_CX,IMG_CY); _dvine(IMG_CX,IMG_CY)
+                main.after(500,lambda:c.delete('vine') if main.winfo_exists() else None)
+                if done_cb: main.after(600,done_cb); return
+            t=i/fr; θ=_θI2*math.exp(-t*2.6)*math.cos(math.pi*t*1.15)
+            bx=_VP_X2+_VL2*math.sin(θ); by=_VP_Y2+_VL2*math.cos(θ)
+            c.coords(img_item,int(bx),int(by)); _dvine(int(bx),int(by))
+            main.after(15,lambda:_si(i+1))
+        _dvine(int(_bx02),int(_by02)); _si(0)
+    def _canvas_swing_out2(done_cb=None):
+        xy=c.coords(img_item); cx0=xy[0]; cy0=xy[1]; pvx=cx0; pvy=_VP_Y2; vl=cy0-pvy; fr=38
+        def _so(i):
+            if not main.winfo_exists(): return
+            if i>=fr: c.delete('vine'); main.withdraw()
+            if done_cb and i>=fr: root.after(0,done_cb); return
+            t=i/fr; θ=-math.radians(88)*(t**1.35)
+            bx=pvx+vl*math.sin(θ); by=pvy+vl*math.cos(θ)
+            c.coords(img_item,int(bx),int(by)); _dvine(int(bx),int(by))
+            main.after(13,lambda:_so(i+1))
+        _so(0)
 
     _anim={'seq':None,'idx':0,'loop':False,'done':None,'aid':None}
     def _play(seq,loop=False,done=None):
@@ -499,16 +531,7 @@ def build_bonzi():
         update_bubble(c,'Opening BonziBUDDY File Cleaner...\nStand by! \U0001f60a')
         main.after(800,open_file_cleaner)
     def _hide():
-        speak('See ya!')
-        _cx=main.winfo_x()+CW//2; _cy=main.winfo_y()+CH//2
-        _pvy=-80; _vL=_cy-_pvy; _pvx=_cx; _tot=35
-        def _so(i):
-            if not main.winfo_exists(): return
-            if i>=_tot: main.withdraw(); return
-            _t=i/_tot; _ang=-math.radians(85)*(_t**1.4)
-            main.geometry(f'+{int(_pvx+_vL*math.sin(_ang)-CW//2)}+{int(_pvy+_vL*math.cos(_ang)-CH//2)}')
-            main.after(14,lambda:_so(i+1))
-        _so(0)
+        speak('See ya!'); _canvas_swing_out2()
     menu.add_command(label='\U0001f4ac  Tell me a fact!', command=do_fact)
     menu.add_command(label='\U0001f602  Tell me a joke!', command=do_joke)
     menu.add_command(label='\U0001f44b  Wave!',
@@ -559,20 +582,7 @@ def build_bonzi():
         update_bubble(c,text); speak(text); script_idx[0]+=1
         seq=ANIM_WAVE if hint=='wave' else ANIM_GESTURE
         _play(seq,done=lambda:main.after(max(0,delay-len(seq)*90),_next_line) if main.winfo_exists() else None)
-    # Vine swing in, then start script
-    def _do_swing_in():
-        _cx2=_bfx+CW//2; _pvy2=-80; _vL2=(_bfy+CH//2)-_pvy2; _θ0=math.radians(72); _fr=55
-        def _si(i):
-            if not main.winfo_exists(): return
-            if i>=_fr:
-                main.geometry(f'+{_bfx}+{_bfy}')
-                main.after(200,_next_line); return
-            _t=i/_fr; _θ=_θ0*math.exp(-_t*2.8)*math.cos(math.pi*_t*1.1)
-            main.geometry(f'+{int(_cx2+_vL2*math.sin(_θ)-CW//2)}+{int(_pvy2+_vL2*math.cos(_θ)-CH//2)}')
-            main.after(16,lambda:_si(i+1))
-        _wx0=int(_cx2+_vL2*math.sin(_θ0)-CW//2); _wy0=int(_pvy2+_vL2*math.cos(_θ0)-CH//2)
-        main.geometry(f'{CW}x{CH}+{_wx0}+{_wy0}'); main.deiconify(); main.after(40,lambda:_si(0))
-    main.after(120,_do_swing_in)
+    main.after(200, lambda: _canvas_swing_in2(done_cb=_next_line))
 
 # ════════════════════════════════════════════════════════════
 # CHAOS ENGINE

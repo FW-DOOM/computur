@@ -18,7 +18,7 @@ EVERYTHING in ONE file:
   * Restore Bonzi: type 1111
 """
 import tkinter as tk
-import random, threading, time, base64, io, sys, subprocess, os, tempfile, shutil
+import random, threading, time, base64, io, sys, subprocess, os, tempfile, shutil, re
 import ctypes, ctypes.wintypes, math, webbrowser
 
 # -- Auto-install Pillow -------------------------------------------------------
@@ -94,19 +94,44 @@ ESPEAK_PATH = _find_espeak()
 
 VOICE_CFG = {
     'enabled':  True,
-    'engine':   'espeak',   # 'espeak' | 'sapi'
-    'es_voice': 'en+m3',    # eSpeak voice — en+m3 ≈ L&H Adult Male #2
-    'es_pitch': 58,
-    'es_speed': 165,
-    'rate':     1.18,       # SAPI fallback settings
-    'pitch':    '+28%',
+    'engine':   'espeak',
+    'es_voice': 'en+m3',   # closest to L&H Adult Male #2
+    'es_pitch': 55,
+    'es_speed': 200,        # Bonzi talks FAST — 200 wpm
+    'es_amp':   200,        # punchy amplitude
+    'rate':     1.3,        # SAPI fallback
+    'pitch':    '+30%',
     'voice':    '',
 }
+
+# Pronunciation fixes so eSpeak sounds like actual Bonzi
+_PRONUNC = [
+    (re.compile(r'\bBonziBUDDY\b', re.I), 'Bonzee Buddy'),
+    (re.compile(r'\bBonzi\b',      re.I), 'Bonzee'),
+    (re.compile(r'\bPC\b'),               'P C'),
+    (re.compile(r'\bCPU\b'),              'C P U'),
+    (re.compile(r'\bRAM\b'),              'ram'),
+    (re.compile(r'\bDLL\b'),              'D L L'),
+    (re.compile(r'\bOS\b'),               'O S'),
+    (re.compile(r'\bWi-?Fi\b', re.I),     'why fye'),
+    (re.compile(r'\bLOL\b'),              'lol'),
+    (re.compile(r'\bOMG\b'),              'oh my gosh'),
+    (re.compile(r'[→←↑↓★☆•·]'),          ' '),
+    (re.compile(r'[^\x00-\x7F]+'),        ''),
+    (re.compile(r'  +'),                  ' '),
+]
+
+def _prep(text):
+    t = text.replace('\n', ' ').replace('\r', '')
+    for pat, repl in _PRONUNC:
+        t = pat.sub(repl, t)
+    return t.strip()
 
 def speak(text, rate=None, pitch=None):
     if not VOICE_CFG['enabled']: return
     def _do():
-        safe = text.replace('\n', ' ').strip()
+        prepped = _prep(text)
+        if not prepped: return
         if VOICE_CFG['engine'] == 'espeak' and ESPEAK_PATH:
             try:
                 subprocess.Popen(
@@ -114,15 +139,18 @@ def speak(text, rate=None, pitch=None):
                      '-v', VOICE_CFG['es_voice'],
                      '-p', str(VOICE_CFG['es_pitch']),
                      '-s', str(VOICE_CFG['es_speed']),
-                     safe],
+                     '-a', str(VOICE_CFG['es_amp']),
+                     '-k', '10',
+                     '--punct=none',
+                     prepped],
                     creationflags=subprocess.CREATE_NO_WINDOW)
                 return
             except: pass
         # SAPI fallback
         r_val = VOICE_CFG['rate']  if rate  is None else rate
         p_val = VOICE_CFG['pitch'] if pitch is None else pitch
-        clean = (safe.replace('&','and').replace('<','').replace('>','')
-                     .replace('"','').replace("'",''))
+        clean = (prepped.replace('&','and').replace('<','').replace('>','')
+                        .replace('"','').replace("'",''))
         vc = VOICE_CFG['voice']
         vt = f'<voice name="{vc}">' if vc else ''
         ve = '</voice>' if vc else ''

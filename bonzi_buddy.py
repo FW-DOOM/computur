@@ -9,7 +9,7 @@ Secret exit  : type 4308
 Restore Bonzi: type 1111  (after right-click Hide)
 """
 import tkinter as tk
-import random, threading, time, base64, io, sys, subprocess, os, tempfile, shutil
+import random, threading, time, base64, io, sys, subprocess, os, tempfile, shutil, re
 import ctypes, ctypes.wintypes
 
 # -- Auto-install Pillow -------------------------------------------------------
@@ -28,32 +28,68 @@ SH = user32.GetSystemMetrics(1)
 from bonzi_b64 import FRAMES   # dict: int -> base64 str
 
 # -- Voice engine ---------------------------------------------------------------
-# Original Bonzi used Lernout & Hauspie TruVoice "Adult Male #2" — a robotic SAPI 4
-# synthesizer. The closest modern replacement is eSpeak NG, which has the same
-# scratchy, robotic character. We use eSpeak as primary, SAPI as fallback.
+# Original Bonzi used Lernout & Hauspie TruVoice "Adult Male #2" (SAPI 4).
+# Best modern match: eSpeak NG with tuned settings.
+# Key to sounding like Bonzi:
+#   - Fast cadence (~200 wpm, NOT 150 default)
+#   - Slightly raised pitch (variant en+m3, pitch 55)
+#   - Amplitude 200 for punchy delivery
+#   - Pronunciation preprocessing (BonziBUDDY → Bonzee Buddy, strip emojis, etc.)
 
 def _find_espeak():
-    """Return path to espeak-ng.exe, or None if not installed."""
     for p in [r'C:\Program Files\eSpeak NG\espeak-ng.exe',
               r'C:\Program Files (x86)\eSpeak NG\espeak-ng.exe']:
-        if os.path.isfile(p):
-            return p
-    return shutil.which('espeak-ng')   # also checks PATH
+        if os.path.isfile(p): return p
+    return shutil.which('espeak-ng')
 
 ESPEAK_PATH = _find_espeak()
 
 VOICE_CFG = {
     'enabled':  True,
-    # --- eSpeak settings (primary — closest to real Bonzi) ---
     'engine':   'espeak',   # 'espeak' | 'sapi'
-    'es_voice': 'en+m3',    # eSpeak voice variant (en+m3 most Bonzi-like)
-    'es_pitch': 58,          # 0-99; 58 ≈ Adult Male #2 register
-    'es_speed': 165,         # words per minute; 165 ≈ Bonzi cadence
-    # --- SAPI fallback settings ---
-    'rate':    1.18,
-    'pitch':   '+28%',
-    'voice':   '',           # '' = auto-pick first male voice
+    # eSpeak settings — tuned to match Bonzi Buddy delivery
+    'es_voice': 'en+m3',    # en+m3 = closest formant to L&H Adult Male #2
+    'es_pitch': 55,          # 0–99; 55 = slightly raised, nasal male register
+    'es_speed': 200,         # WPM — Bonzi talks FAST. 200 is the sweet spot.
+    'es_amp':   200,         # amplitude (volume/punch); default 100, 200 = snappier
+    # SAPI fallback
+    'rate':    1.3,
+    'pitch':   '+30%',
+    'voice':   '',
 }
+
+# Pronunciation table — makes eSpeak say things the way Bonzi actually said them
+_PRONUNC = [
+    # His own name — the #1 fix
+    (re.compile(r'\bBonziBUDDY\b', re.I), 'Bonzee Buddy'),
+    (re.compile(r'\bBonzi\b',      re.I), 'Bonzee'),
+    (re.compile(r'\bBUDDY\b'),            'Buddy'),
+    # Tech words that eSpeak mangles
+    (re.compile(r'\bPC\b'),               'P C'),
+    (re.compile(r'\bCPU\b'),              'C P U'),
+    (re.compile(r'\bRAM\b'),              'ram'),
+    (re.compile(r'\bDLL\b'),              'D L L'),
+    (re.compile(r'\bGHz\b'),              'gigahertz'),
+    (re.compile(r'\bMHz\b'),              'megahertz'),
+    (re.compile(r'\bOS\b'),               'O S'),
+    (re.compile(r'\bWi-?Fi\b', re.I),     'why fye'),
+    (re.compile(r'\bURL\b'),              'U R L'),
+    (re.compile(r'\bLOL\b'),              'lol'),
+    (re.compile(r'\bOMG\b'),              'oh my gosh'),
+    # eSpeak reads "→" "★" etc literally
+    (re.compile(r'[→←↑↓★☆•·]'),          ' '),
+    # strip all non-ASCII (emojis, etc.) — eSpeak skips them but they add pauses
+    (re.compile(r'[^\x00-\x7F]+'),        ''),
+    # clean up double spaces
+    (re.compile(r'  +'),                  ' '),
+]
+
+def _prep(text):
+    """Apply Bonzi pronunciation fixes + clean text for eSpeak."""
+    t = text.replace('\n', ' ').replace('\r', '')
+    for pat, repl in _PRONUNC:
+        t = pat.sub(repl, t)
+    return t.strip()
 
 def _get_voices():
     """Return list of installed SAPI voice names."""
@@ -70,11 +106,13 @@ def _get_voices():
         return []
 
 def speak(text, rate=None, pitch=None):
-    """Speak text using the configured voice engine."""
+    """Speak text in Bonzi's voice."""
     if not VOICE_CFG['enabled']: return
     def _do():
-        safe = text.replace('\n', ' ').strip()
-        # ----- eSpeak NG (preferred — sounds like real Bonzi) -----
+        prepped = _prep(text)
+        if not prepped: return
+
+        # ── eSpeak NG (primary) ──────────────────────────────────────────
         if VOICE_CFG['engine'] == 'espeak' and ESPEAK_PATH:
             try:
                 subprocess.Popen(
@@ -82,32 +120,37 @@ def speak(text, rate=None, pitch=None):
                      '-v', VOICE_CFG['es_voice'],
                      '-p', str(VOICE_CFG['es_pitch']),
                      '-s', str(VOICE_CFG['es_speed']),
-                     safe],
+                     '-a', str(VOICE_CFG['es_amp']),
+                     '-k', '10',   # stress capitalized words (Bonzi emphasises a lot)
+                     '--punct=none',
+                     prepped],
                     creationflags=subprocess.CREATE_NO_WINDOW)
                 return
             except: pass
-        # ----- SAPI fallback -----
+
+        # ── SAPI fallback ────────────────────────────────────────────────
         r_val = VOICE_CFG['rate']  if rate  is None else rate
         p_val = VOICE_CFG['pitch'] if pitch is None else pitch
-        clean = (safe.replace('&','and').replace('<','').replace('>','')
-                     .replace('"','').replace("'",''))
-        voice_tag = (f'<voice name="{VOICE_CFG["voice"]}">' if VOICE_CFG['voice'] else '')
-        voice_end  = ('</voice>' if VOICE_CFG['voice'] else '')
+        clean = (prepped.replace('&','and').replace('<','').replace('>','')
+                        .replace('"','').replace("'",''))
+        vc = VOICE_CFG['voice']
+        vt = f'<voice name="{vc}">' if vc else ''
+        ve = '</voice>'             if vc else ''
         ssml = (f'<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">'
-                f'{voice_tag}<prosody pitch="{p_val}" rate="{r_val:.2f}">{clean}</prosody>{voice_end}'
+                f'{vt}<prosody pitch="{p_val}" rate="{r_val:.2f}">{clean}</prosody>{ve}'
                 f'</speak>')
         try:
             tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.xml',
                                               delete=False, encoding='utf-8')
             tmp.write(ssml); tmp.close()
-            fpath = tmp.name.replace('\\', '/')
+            fp = tmp.name.replace('\\', '/')
             ps = (f"Add-Type -AssemblyName System.Speech; "
                   f"$s=New-Object System.Speech.Synthesis.SpeechSynthesizer; "
-                  f"if(-not '{VOICE_CFG['voice']}'){{try{{$s.SelectVoiceByHints("
+                  f"if(-not '{vc}'){{try{{$s.SelectVoiceByHints("
                   f"[System.Speech.Synthesis.VoiceGender]::Male)}}catch{{}}}}; "
-                  f"$x=[System.IO.File]::ReadAllText('{fpath}'); "
+                  f"$x=[System.IO.File]::ReadAllText('{fp}'); "
                   f"$s.SpeakSsml($x); "
-                  f"Remove-Item '{fpath}' -Force -ErrorAction SilentlyContinue")
+                  f"Remove-Item '{fp}' -Force -ErrorAction SilentlyContinue")
             subprocess.Popen(["powershell", "-WindowStyle", "Hidden", "-Command", ps],
                              creationflags=subprocess.CREATE_NO_WINDOW)
         except: pass
@@ -177,7 +220,7 @@ def show_voice_settings(parent=None):
 
     tk.Label(esf, text='Pitch (0-99):', font=('Segoe UI',10), fg='#cc88ff',
              bg='#0d0020').grid(row=1,column=0,sticky='w',pady=3)
-    pitch_map_es = [(40,'Low'),(50,'Normal'),(58,'Bonzi-like ★'),(65,'High'),(75,'Very high')]
+    pitch_map_es = [(40,'Low'),(50,'Normal'),(55,'Bonzi-like ★'),(65,'High'),(75,'Very high')]
     esp_var = tk.StringVar(value=next((f'{v} — {l}' for v,l in pitch_map_es
                                        if v==VOICE_CFG['es_pitch']),
                                       f"{VOICE_CFG['es_pitch']} — custom"))
@@ -189,7 +232,7 @@ def show_voice_settings(parent=None):
 
     tk.Label(esf, text='Speed (wpm):', font=('Segoe UI',10), fg='#cc88ff',
              bg='#0d0020').grid(row=2,column=0,sticky='w',pady=3)
-    speed_map = [(130,'Slow'),(150,'Normal'),(165,'Bonzi-like ★'),(185,'Fast'),(210,'Very fast')]
+    speed_map = [(150,'Slow'),(175,'Normal'),(200,'Bonzi-like ★'),(225,'Fast'),(260,'Very fast')]
     ess_var = tk.StringVar(value=next((f'{v} — {l}' for v,l in speed_map
                                        if v==VOICE_CFG['es_speed']),
                                       f"{VOICE_CFG['es_speed']} — custom"))
@@ -198,6 +241,18 @@ def show_voice_settings(parent=None):
                 activebackground='#5500aa', highlightthickness=0, width=36)
     essm['menu'].config(bg='#1a0033', fg='white', activebackground='#5500aa')
     essm.grid(row=2,column=1,sticky='w',padx=8)
+
+    tk.Label(esf, text='Amplitude:', font=('Segoe UI',10), fg='#cc88ff',
+             bg='#0d0020').grid(row=3,column=0,sticky='w',pady=3)
+    amp_map = [(80,'Quiet'),(100,'Normal'),(150,'Loud'),(200,'Bonzi-like ★'),(250,'Very loud')]
+    esa_var = tk.StringVar(value=next((f'{v} — {l}' for v,l in amp_map
+                                       if v==VOICE_CFG['es_amp']),
+                                      f"{VOICE_CFG['es_amp']} — custom"))
+    esam = tk.OptionMenu(esf, esa_var, *[f'{v} — {l}' for v,l in amp_map])
+    esam.config(font=('Segoe UI',9), bg='#1a0033', fg='white',
+                activebackground='#5500aa', highlightthickness=0, width=36)
+    esam['menu'].config(bg='#1a0033', fg='white', activebackground='#5500aa')
+    esam.grid(row=3,column=1,sticky='w',padx=8)
 
     status_lbl = tk.Label(w, text='', font=('Segoe UI',9,'italic'),
                           fg='#ffcc00', bg='#0d0020')
@@ -209,6 +264,7 @@ def show_voice_settings(parent=None):
         VOICE_CFG['es_voice'] = esv_var.get().split(' — ')[0]
         VOICE_CFG['es_pitch'] = int(esp_var.get().split(' — ')[0])
         VOICE_CFG['es_speed'] = int(ess_var.get().split(' — ')[0])
+        VOICE_CFG['es_amp']   = int(esa_var.get().split(' — ')[0])
         status_lbl.config(text='Settings applied!')
 
     def _test():

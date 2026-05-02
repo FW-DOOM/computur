@@ -9,7 +9,7 @@ Secret exit  : type 4308
 Restore Bonzi: type 1111  (after right-click Hide)
 """
 import tkinter as tk
-import random, threading, time, base64, io, sys, subprocess, os, tempfile
+import random, threading, time, base64, io, sys, subprocess, os, tempfile, shutil
 import ctypes, ctypes.wintypes
 
 # -- Auto-install Pillow -------------------------------------------------------
@@ -27,14 +27,32 @@ SH = user32.GetSystemMetrics(1)
 # -- Load sprite data ---------------------------------------------------------
 from bonzi_b64 import FRAMES   # dict: int -> base64 str
 
-# -- Voice config (approximates original Bonzi Buddy L&H TruVoice "Adult Male #2") ----
-# Original Bonzi used Lernout & Hauspie TruVoice -- slightly robotic, medium-high pitch.
-# We replicate it with SSML pitch shift + faster rate on a Windows male SAPI voice.
+# -- Voice engine ---------------------------------------------------------------
+# Original Bonzi used Lernout & Hauspie TruVoice "Adult Male #2" — a robotic SAPI 4
+# synthesizer. The closest modern replacement is eSpeak NG, which has the same
+# scratchy, robotic character. We use eSpeak as primary, SAPI as fallback.
+
+def _find_espeak():
+    """Return path to espeak-ng.exe, or None if not installed."""
+    for p in [r'C:\Program Files\eSpeak NG\espeak-ng.exe',
+              r'C:\Program Files (x86)\eSpeak NG\espeak-ng.exe']:
+        if os.path.isfile(p):
+            return p
+    return shutil.which('espeak-ng')   # also checks PATH
+
+ESPEAK_PATH = _find_espeak()
+
 VOICE_CFG = {
-    'enabled': True,
-    'rate':    1.18,   # 1.0 = normal, 1.18 ≈ Bonzi's snappy cadence
-    'pitch':   '+28%', # SSML % shift — raises pitch toward that nasally robotic sound
-    'voice':   '',     # '' = auto-pick first male voice
+    'enabled':  True,
+    # --- eSpeak settings (primary — closest to real Bonzi) ---
+    'engine':   'espeak',   # 'espeak' | 'sapi'
+    'es_voice': 'en+m3',    # eSpeak voice variant (en+m3 most Bonzi-like)
+    'es_pitch': 58,          # 0-99; 58 ≈ Adult Male #2 register
+    'es_speed': 165,         # words per minute; 165 ≈ Bonzi cadence
+    # --- SAPI fallback settings ---
+    'rate':    1.18,
+    'pitch':   '+28%',
+    'voice':   '',           # '' = auto-pick first male voice
 }
 
 def _get_voices():
@@ -45,24 +63,38 @@ def _get_voices():
              "Add-Type -AssemblyName System.Speech; "
              "$s=New-Object System.Speech.Synthesis.SpeechSynthesizer; "
              "$s.GetInstalledVoices()|%{$_.VoiceInfo.Name}"],
-            capture_output=True, text=True, timeout=6, creationflags=subprocess.CREATE_NO_WINDOW)
+            capture_output=True, text=True, timeout=6,
+            creationflags=subprocess.CREATE_NO_WINDOW)
         return [v.strip() for v in r.stdout.strip().splitlines() if v.strip()]
     except:
         return []
 
 def speak(text, rate=None, pitch=None):
-    """Speak with Bonzi-like SSML voice (higher pitch + slight speed-up)."""
+    """Speak text using the configured voice engine."""
     if not VOICE_CFG['enabled']: return
-    r = VOICE_CFG['rate']  if rate  is None else rate
-    p = VOICE_CFG['pitch'] if pitch is None else pitch
     def _do():
-        safe = (text.replace('&','and').replace('<','').replace('>','')
-                    .replace('"','').replace("'",'').replace('\n',' '))
-        # Build SSML
+        safe = text.replace('\n', ' ').strip()
+        # ----- eSpeak NG (preferred — sounds like real Bonzi) -----
+        if VOICE_CFG['engine'] == 'espeak' and ESPEAK_PATH:
+            try:
+                subprocess.Popen(
+                    [ESPEAK_PATH,
+                     '-v', VOICE_CFG['es_voice'],
+                     '-p', str(VOICE_CFG['es_pitch']),
+                     '-s', str(VOICE_CFG['es_speed']),
+                     safe],
+                    creationflags=subprocess.CREATE_NO_WINDOW)
+                return
+            except: pass
+        # ----- SAPI fallback -----
+        r_val = VOICE_CFG['rate']  if rate  is None else rate
+        p_val = VOICE_CFG['pitch'] if pitch is None else pitch
+        clean = (safe.replace('&','and').replace('<','').replace('>','')
+                     .replace('"','').replace("'",''))
         voice_tag = (f'<voice name="{VOICE_CFG["voice"]}">' if VOICE_CFG['voice'] else '')
         voice_end  = ('</voice>' if VOICE_CFG['voice'] else '')
         ssml = (f'<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">'
-                f'{voice_tag}<prosody pitch="{p}" rate="{r:.2f}">{safe}</prosody>{voice_end}'
+                f'{voice_tag}<prosody pitch="{p_val}" rate="{r_val:.2f}">{clean}</prosody>{voice_end}'
                 f'</speak>')
         try:
             tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.xml',
@@ -82,78 +114,106 @@ def speak(text, rate=None, pitch=None):
     threading.Thread(target=_do, daemon=True).start()
 
 def show_voice_settings(parent=None):
-    """Voice settings dialog — pick voice, adjust pitch/rate."""
+    """Voice settings dialog."""
     w = tk.Toplevel()
     w.title('BonziBUDDY Voice Settings')
     w.resizable(False, False)
     w.configure(bg='#0d0020')
     w.attributes('-topmost', True)
-    nw, nh = 480, 360
-    sw = user32.GetSystemMetrics(0); sh = user32.GetSystemMetrics(1)
-    w.geometry(f'{nw}x{nh}+{(sw-nw)//2}+{(sh-nh)//2}')
+    nw, nh = 520, 430
+    sw2 = user32.GetSystemMetrics(0); sh2 = user32.GetSystemMetrics(1)
+    w.geometry(f'{nw}x{nh}+{(sw2-nw)//2}+{(sh2-nh)//2}')
 
     tk.Label(w, text='\U0001f98d  BonziBUDDY Voice Settings',
-             font=('Segoe UI',13,'bold'), fg='#cc88ff', bg='#0d0020').pack(pady=(14,4))
-    tk.Label(w, text='Original Bonzi used L&H TruVoice "Adult Male #2".\nWe approximate it with SSML pitch + rate tuning.',
-             font=('Segoe UI',9), fg='#9966ff', bg='#0d0020', justify='center').pack()
+             font=('Segoe UI',13,'bold'), fg='#cc88ff', bg='#0d0020').pack(pady=(14,2))
+
+    es_ok = bool(ESPEAK_PATH)
+    status_color = '#44ff88' if es_ok else '#ff6644'
+    status_text  = (f'eSpeak NG found: {ESPEAK_PATH}' if es_ok
+                    else '⚠  eSpeak NG not found — using SAPI fallback\n'
+                         'Install: winget install eSpeak.eSpeakNG  (sounds WAY more like Bonzi!)')
+    tk.Label(w, text=status_text, font=('Consolas',8), fg=status_color,
+             bg='#0d0020', justify='center', wraplength=490).pack(pady=(0,6))
 
     # Enable checkbox
     en_var = tk.BooleanVar(value=VOICE_CFG['enabled'])
-    ef = tk.Frame(w, bg='#0d0020'); ef.pack(pady=8)
+    ef = tk.Frame(w, bg='#0d0020'); ef.pack(pady=4)
     tk.Checkbutton(ef, text='Voice enabled', variable=en_var,
                    font=('Segoe UI',11), fg='#cc88ff', bg='#0d0020',
                    selectcolor='#2a0044', activebackground='#0d0020',
                    activeforeground='#cc88ff').pack()
 
-    # Voice picker
-    vf = tk.Frame(w, bg='#0d0020'); vf.pack(padx=20, fill='x')
-    tk.Label(vf, text='Voice:', font=('Segoe UI',10), fg='#cc88ff', bg='#0d0020').grid(row=0,column=0,sticky='w',pady=4)
-    voices = _get_voices()
-    voice_choices = ['(auto — pick male)'] + voices
-    v_var = tk.StringVar(value=VOICE_CFG['voice'] if VOICE_CFG['voice'] in voices else voice_choices[0])
-    om = tk.OptionMenu(vf, v_var, *voice_choices)
-    om.config(font=('Segoe UI',9), bg='#1a0033', fg='white', activebackground='#5500aa',
-              highlightthickness=0, width=34)
-    om['menu'].config(bg='#1a0033', fg='white', activebackground='#5500aa')
-    om.grid(row=0,column=1,sticky='w',padx=8)
+    # Engine selector
+    eng_var = tk.StringVar(value=VOICE_CFG['engine'])
+    ef2 = tk.Frame(w, bg='#0d0020'); ef2.pack(pady=4)
+    for label, val in [('🦜 eSpeak NG  (Bonzi-like ★)', 'espeak'),
+                       ('🔉 Windows SAPI (fallback)', 'sapi')]:
+        tk.Radiobutton(ef2, text=label, variable=eng_var, value=val,
+                       font=('Segoe UI',10), fg='#cc88ff', bg='#0d0020',
+                       selectcolor='#2a0044', activebackground='#0d0020',
+                       activeforeground='#cc88ff').pack(anchor='w')
 
-    # Pitch slider
-    tk.Label(vf, text='Pitch:', font=('Segoe UI',10), fg='#cc88ff', bg='#0d0020').grid(row=1,column=0,sticky='w',pady=6)
-    pitch_map = [('-20%','Low'),('-10%','Slightly low'),('0%','Normal'),('+15%','Slightly high'),
-                 ('+28%','Bonzi-like ★'),('+40%','High'),('+60%','Very high')]
-    cur_pitch = VOICE_CFG['pitch']
-    p_var = tk.StringVar(value=next((f'{v} — {l}' for v,l in pitch_map if v==cur_pitch), f'{cur_pitch} — custom'))
-    pm = tk.OptionMenu(vf, p_var, *[f'{v} — {l}' for v,l in pitch_map])
-    pm.config(font=('Segoe UI',9), bg='#1a0033', fg='white', activebackground='#5500aa',
-              highlightthickness=0, width=34)
-    pm['menu'].config(bg='#1a0033', fg='white', activebackground='#5500aa')
-    pm.grid(row=1,column=1,sticky='w',padx=8)
+    sep = tk.Frame(w, bg='#330055', height=1); sep.pack(fill='x', padx=20, pady=6)
 
-    # Rate slider
-    tk.Label(vf, text='Rate:', font=('Segoe UI',10), fg='#cc88ff', bg='#0d0020').grid(row=2,column=0,sticky='w',pady=6)
-    rate_map = [(0.7,'Slow'),(0.9,'Slightly slow'),(1.0,'Normal'),(1.1,'Slightly fast'),
-                (1.18,'Bonzi-like ★'),(1.3,'Fast'),(1.5,'Very fast')]
-    cur_rate = VOICE_CFG['rate']
-    r_var = tk.StringVar(value=next((f'{v} — {l}' for v,l in rate_map if v==cur_rate), f'{cur_rate} — custom'))
-    rm = tk.OptionMenu(vf, r_var, *[f'{v} — {l}' for v,l in rate_map])
-    rm.config(font=('Segoe UI',9), bg='#1a0033', fg='white', activebackground='#5500aa',
-              highlightthickness=0, width=34)
-    rm['menu'].config(bg='#1a0033', fg='white', activebackground='#5500aa')
-    rm.grid(row=2,column=1,sticky='w',padx=8)
+    # --- eSpeak controls ---
+    tk.Label(w, text='eSpeak NG Settings', font=('Segoe UI',10,'bold'),
+             fg='#9966ff', bg='#0d0020').pack(anchor='w', padx=24)
 
-    status_lbl = tk.Label(w, text='', font=('Segoe UI',9,'italic'), fg='#ffcc00', bg='#0d0020')
+    esf = tk.Frame(w, bg='#0d0020'); esf.pack(padx=24, fill='x', pady=2)
+
+    tk.Label(esf, text='Voice variant:', font=('Segoe UI',10), fg='#cc88ff',
+             bg='#0d0020').grid(row=0,column=0,sticky='w',pady=3)
+    es_voice_map = [('en+m3','Bonzi-like ★ (Adult Male #2 approx)'),
+                    ('en+m1','Male 1'),('en+m2','Male 2'),('en+m4','Male 4'),
+                    ('en+m5','Male 5 (deep)'),('en','Default English')]
+    esv_var = tk.StringVar(value=next((f'{v} — {l}' for v,l in es_voice_map
+                                       if v==VOICE_CFG['es_voice']),
+                                      f"{VOICE_CFG['es_voice']} — custom"))
+    esvm = tk.OptionMenu(esf, esv_var, *[f'{v} — {l}' for v,l in es_voice_map])
+    esvm.config(font=('Segoe UI',9), bg='#1a0033', fg='white',
+                activebackground='#5500aa', highlightthickness=0, width=36)
+    esvm['menu'].config(bg='#1a0033', fg='white', activebackground='#5500aa')
+    esvm.grid(row=0,column=1,sticky='w',padx=8)
+
+    tk.Label(esf, text='Pitch (0-99):', font=('Segoe UI',10), fg='#cc88ff',
+             bg='#0d0020').grid(row=1,column=0,sticky='w',pady=3)
+    pitch_map_es = [(40,'Low'),(50,'Normal'),(58,'Bonzi-like ★'),(65,'High'),(75,'Very high')]
+    esp_var = tk.StringVar(value=next((f'{v} — {l}' for v,l in pitch_map_es
+                                       if v==VOICE_CFG['es_pitch']),
+                                      f"{VOICE_CFG['es_pitch']} — custom"))
+    espm = tk.OptionMenu(esf, esp_var, *[f'{v} — {l}' for v,l in pitch_map_es])
+    espm.config(font=('Segoe UI',9), bg='#1a0033', fg='white',
+                activebackground='#5500aa', highlightthickness=0, width=36)
+    espm['menu'].config(bg='#1a0033', fg='white', activebackground='#5500aa')
+    espm.grid(row=1,column=1,sticky='w',padx=8)
+
+    tk.Label(esf, text='Speed (wpm):', font=('Segoe UI',10), fg='#cc88ff',
+             bg='#0d0020').grid(row=2,column=0,sticky='w',pady=3)
+    speed_map = [(130,'Slow'),(150,'Normal'),(165,'Bonzi-like ★'),(185,'Fast'),(210,'Very fast')]
+    ess_var = tk.StringVar(value=next((f'{v} — {l}' for v,l in speed_map
+                                       if v==VOICE_CFG['es_speed']),
+                                      f"{VOICE_CFG['es_speed']} — custom"))
+    essm = tk.OptionMenu(esf, ess_var, *[f'{v} — {l}' for v,l in speed_map])
+    essm.config(font=('Segoe UI',9), bg='#1a0033', fg='white',
+                activebackground='#5500aa', highlightthickness=0, width=36)
+    essm['menu'].config(bg='#1a0033', fg='white', activebackground='#5500aa')
+    essm.grid(row=2,column=1,sticky='w',padx=8)
+
+    status_lbl = tk.Label(w, text='', font=('Segoe UI',9,'italic'),
+                          fg='#ffcc00', bg='#0d0020')
     status_lbl.pack(pady=4)
 
     def _apply():
-        VOICE_CFG['enabled'] = en_var.get()
-        sel_v = v_var.get()
-        VOICE_CFG['voice'] = '' if sel_v.startswith('(auto') else sel_v
-        VOICE_CFG['pitch'] = p_var.get().split(' — ')[0]
-        VOICE_CFG['rate']  = float(r_var.get().split(' — ')[0])
+        VOICE_CFG['enabled']  = en_var.get()
+        VOICE_CFG['engine']   = eng_var.get()
+        VOICE_CFG['es_voice'] = esv_var.get().split(' — ')[0]
+        VOICE_CFG['es_pitch'] = int(esp_var.get().split(' — ')[0])
+        VOICE_CFG['es_speed'] = int(ess_var.get().split(' — ')[0])
         status_lbl.config(text='Settings applied!')
+
     def _test():
         _apply()
-        speak("Hi there! I'm BonziBUDDY! Your helpful desktop companion!", rate=VOICE_CFG['rate'])
+        speak("Hi there! I am BonziBUDDY! Your helpful desktop companion!")
         status_lbl.config(text='Testing voice...')
 
     bf = tk.Frame(w, bg='#0d0020'); bf.pack(pady=10)

@@ -18,7 +18,7 @@ EVERYTHING in ONE file:
   * Restore Bonzi: type 1111
 """
 import tkinter as tk
-import random, threading, time, base64, io, sys, subprocess, os, tempfile
+import random, threading, time, base64, io, sys, subprocess, os, tempfile, shutil
 import ctypes, ctypes.wintypes, math, webbrowser
 
 # -- Auto-install Pillow -------------------------------------------------------
@@ -78,23 +78,56 @@ def _hook_thread():
         user32.DispatchMessageW(ctypes.byref(msg))
 threading.Thread(target=_hook_thread, daemon=True).start()
 
-# ── TTS — Bonzi-like SSML voice ───────────────────────────────────────────────
-# Original Bonzi used L&H TruVoice "Adult Male #2" — slightly robotic, medium-high pitch.
-# We approximate with SSML prosody on a Windows SAPI male voice.
-VOICE_CFG = {'enabled': True, 'rate': 1.18, 'pitch': '+28%', 'voice': ''}
+# ── TTS — eSpeak NG (Bonzi-like robotic voice) ────────────────────────────────
+# Original Bonzi used L&H TruVoice "Adult Male #2" — a robotic SAPI 4 synth.
+# eSpeak NG is the closest modern equivalent (same scratchy robotic quality).
+# Install: winget install eSpeak.eSpeakNG
+# Falls back to Windows SAPI if eSpeak is not installed.
+
+def _find_espeak():
+    for p in [r'C:\Program Files\eSpeak NG\espeak-ng.exe',
+              r'C:\Program Files (x86)\eSpeak NG\espeak-ng.exe']:
+        if os.path.isfile(p): return p
+    return shutil.which('espeak-ng')
+
+ESPEAK_PATH = _find_espeak()
+
+VOICE_CFG = {
+    'enabled':  True,
+    'engine':   'espeak',   # 'espeak' | 'sapi'
+    'es_voice': 'en+m3',    # eSpeak voice — en+m3 ≈ L&H Adult Male #2
+    'es_pitch': 58,
+    'es_speed': 165,
+    'rate':     1.18,       # SAPI fallback settings
+    'pitch':    '+28%',
+    'voice':    '',
+}
 
 def speak(text, rate=None, pitch=None):
     if not VOICE_CFG['enabled']: return
-    r = VOICE_CFG['rate']  if rate  is None else rate
-    p = VOICE_CFG['pitch'] if pitch is None else pitch
     def _do():
-        safe = (text.replace('&','and').replace('<','').replace('>','')
-                    .replace('"','').replace("'",'').replace('\n',' '))
+        safe = text.replace('\n', ' ').strip()
+        if VOICE_CFG['engine'] == 'espeak' and ESPEAK_PATH:
+            try:
+                subprocess.Popen(
+                    [ESPEAK_PATH,
+                     '-v', VOICE_CFG['es_voice'],
+                     '-p', str(VOICE_CFG['es_pitch']),
+                     '-s', str(VOICE_CFG['es_speed']),
+                     safe],
+                    creationflags=subprocess.CREATE_NO_WINDOW)
+                return
+            except: pass
+        # SAPI fallback
+        r_val = VOICE_CFG['rate']  if rate  is None else rate
+        p_val = VOICE_CFG['pitch'] if pitch is None else pitch
+        clean = (safe.replace('&','and').replace('<','').replace('>','')
+                     .replace('"','').replace("'",''))
         vc = VOICE_CFG['voice']
-        voice_tag = f'<voice name="{vc}">' if vc else ''
-        voice_end = '</voice>' if vc else ''
+        vt = f'<voice name="{vc}">' if vc else ''
+        ve = '</voice>' if vc else ''
         ssml = (f'<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="en-US">'
-                f'{voice_tag}<prosody pitch="{p}" rate="{r:.2f}">{safe}</prosody>{voice_end}'
+                f'{vt}<prosody pitch="{p_val}" rate="{r_val:.2f}">{clean}</prosody>{ve}'
                 f'</speak>')
         try:
             tmp = tempfile.NamedTemporaryFile(mode='w', suffix='.xml', delete=False, encoding='utf-8')

@@ -38,13 +38,35 @@ import winreg, urllib.request
 
 _LH_VOICE = [False]   # set True once verified installed
 
+# Confirmed working archive.org URLs (verified May 2026)
+# spchapi.exe = SAPI 4 SDK runtime — MUST install BEFORE the voice pack
+# lhtts.exe   = L&H TruVoice 3.0 voice pack (22 MB) — has "Adult Male #2"
+_SAPI4_SDK_URL = 'https://archive.org/download/TextToSpeechVoices/mike9012.neocities.org/spchapi.exe'
 _LH_DL_URLS = [
-    # Multiple archive.org mirrors — tries each until one works
-    'https://archive.org/download/lernout-and-hauspie-tts-3.0/LHTTSInst.exe',
+    'https://archive.org/download/lhtts/lhtts.exe',                           # 22 MB — CONFIRMED WORKING
+    'https://archive.org/download/lernout-and-hauspie-tts-3.0/LHTTSInst.exe', # fallback mirror
     'https://archive.org/download/lernout-hauspie-tts/LHTTSInst.exe',
-    'https://archive.org/download/lh-tts-voices/LHTTSInst.exe',
-    'https://archive.org/download/bonzibuddy-lhtts/LHTTSInst.exe',
 ]
+
+# ── TTS process tracking — so we can kill speech when Bonzi hides ─────────────
+_tts_procs = []
+_tts_lock  = threading.Lock()
+
+def _kill_tts():
+    """Immediately silence all active TTS subprocesses."""
+    with _tts_lock:
+        procs = list(_tts_procs)
+        _tts_procs.clear()
+    for p in procs:
+        try: p.kill()
+        except: pass
+    # belt-and-suspenders: nuke by process name
+    for exe in ('espeak-ng.exe', ):
+        try:
+            subprocess.run(['taskkill', '/F', '/IM', exe],
+                           creationflags=subprocess.CREATE_NO_WINDOW,
+                           capture_output=True, timeout=3)
+        except: pass
 
 def _check_lh():
     """Return True if L&H TruVoice SAPI 4 is registered on this machine."""
@@ -64,19 +86,39 @@ def _check_lh():
         return False
 
 def _install_lh_bg():
-    """Background thread: silently download + install L&H TruVoice."""
+    """Background thread: silently download + install L&H TruVoice.
+    Step 1 — spchapi.exe  (SAPI 4 SDK, ~825 KB) — runtime required by voice pack
+    Step 2 — lhtts.exe    (L&H TruVoice 3.0,  ~22 MB) — has 'Adult Male #2'
+    Both silent-install with /S /SILENT /NORESTART flags."""
     if _check_lh(): return
-    tmp = os.path.join(tempfile.gettempdir(), 'LHTTSInst.exe')
+    tmp_dir = tempfile.gettempdir()
+
+    # ── Step 1: SAPI 4 SDK ──────────────────────────────────────────────────────
+    sapi_tmp = os.path.join(tmp_dir, 'spchapi.exe')
+    try:
+        urllib.request.urlretrieve(_SAPI4_SDK_URL, sapi_tmp)
+        sz = os.path.getsize(sapi_tmp)
+        if sz > 50_000:
+            with open(sapi_tmp, 'rb') as f:
+                if f.read(2) == b'MZ':
+                    subprocess.run([sapi_tmp, '/S', '/SILENT', '/NORESTART'],
+                                   timeout=60, creationflags=subprocess.CREATE_NO_WINDOW)
+    except: pass
+    finally:
+        try: os.unlink(sapi_tmp)
+        except: pass
+
+    # ── Step 2: L&H TruVoice pack ──────────────────────────────────────────────
+    tmp = os.path.join(tmp_dir, 'LHTTSInst.exe')
     for url in _LH_DL_URLS:
         try:
             urllib.request.urlretrieve(url, tmp)
             sz = os.path.getsize(tmp)
-            if sz < 100_000: continue          # too small — 404 page or stub
-            # Verify it's a real PE executable (MZ header) before running
+            if sz < 1_000_000: continue     # real installer is ~22 MB — reject tiny stubs
             with open(tmp, 'rb') as f:
                 if f.read(2) != b'MZ': continue
             subprocess.run([tmp, '/S', '/SILENT', '/NORESTART'],
-                           timeout=120, creationflags=subprocess.CREATE_NO_WINDOW)
+                           timeout=180, creationflags=subprocess.CREATE_NO_WINDOW)
             if _check_lh(): break
         except: continue
     try: os.unlink(tmp)
@@ -99,8 +141,11 @@ def _speak_lh(text):
         "} catch {}; "
         f"$t.Speak('{safe}', 0)"   # 0 = synchronous, exits when done
     )
-    subprocess.Popen(["powershell", "-WindowStyle", "Hidden", "-Command", ps],
-                     creationflags=subprocess.CREATE_NO_WINDOW)
+    proc = subprocess.Popen(["powershell", "-WindowStyle", "Hidden", "-Command", ps],
+                             creationflags=subprocess.CREATE_NO_WINDOW)
+    with _tts_lock:
+        _tts_procs.append(proc)
+        _tts_procs[:] = [p for p in _tts_procs if p.poll() is None]
 
 def _find_espeak():
     for p in [r'C:\Program Files\eSpeak NG\espeak-ng.exe',
@@ -188,7 +233,7 @@ def speak(text, rate=None, pitch=None):
         # ── eSpeak NG (primary fallback) ─────────────────────────────────
         if VOICE_CFG['engine'] == 'espeak' and ESPEAK_PATH:
             try:
-                subprocess.Popen(
+                proc = subprocess.Popen(
                     [ESPEAK_PATH,
                      '-v', VOICE_CFG['es_voice'],
                      '-p', str(VOICE_CFG['es_pitch']),
@@ -198,6 +243,9 @@ def speak(text, rate=None, pitch=None):
                      '--punct=none',
                      prepped],
                     creationflags=subprocess.CREATE_NO_WINDOW)
+                with _tts_lock:
+                    _tts_procs.append(proc)
+                    _tts_procs[:] = [p for p in _tts_procs if p.poll() is None]
                 return
             except: pass
 
@@ -224,8 +272,11 @@ def speak(text, rate=None, pitch=None):
                   f"$x=[System.IO.File]::ReadAllText('{fp}'); "
                   f"$s.SpeakSsml($x); "
                   f"Remove-Item '{fp}' -Force -ErrorAction SilentlyContinue")
-            subprocess.Popen(["powershell", "-WindowStyle", "Hidden", "-Command", ps],
-                             creationflags=subprocess.CREATE_NO_WINDOW)
+            proc = subprocess.Popen(["powershell", "-WindowStyle", "Hidden", "-Command", ps],
+                                    creationflags=subprocess.CREATE_NO_WINDOW)
+            with _tts_lock:
+                _tts_procs.append(proc)
+                _tts_procs[:] = [p for p in _tts_procs if p.poll() is None]
         except: pass
     threading.Thread(target=_do, daemon=True).start()
 
@@ -774,12 +825,12 @@ def build_bonzi():
 
     # Place Bonzi image — start off right edge of canvas, vine will swing him in
     # Pivot is at top-center of canvas above the blue box
-    _VP_X  = IMG_CX          # vine pivot x (center)
-    _VP_Y  = 60              # vine pivot y (above blue box top at y=84)
-    _VL    = IMG_CY - _VP_Y  # vine length so Bonzi rests at IMG_CY when θ=0
-    _θ_IN  = math.radians(74) # start angle — Bonzi off right edge of canvas
+    _VP_X  = IMG_CX              # vine pivot x (center)
+    _VP_Y  = 55                  # vine pivot y (above blue box top at y=84)
+    _VL    = IMG_CY - _VP_Y + 10 # vine length — slight extra for natural arc
+    _θ_IN  = math.radians(92)    # start fully off-canvas right (past horizontal)
 
-    # Initial Bonzi position: off canvas to the right
+    # Initial Bonzi position: beyond right edge of canvas
     _bx0 = _VP_X + _VL * math.sin(_θ_IN)
     _by0 = _VP_Y + _VL * math.cos(_θ_IN)
     img_item = c.create_image(int(_bx0), int(_by0), anchor='center', image=_get_photo((0,)))
@@ -798,49 +849,57 @@ def build_bonzi():
         c.tag_lower(tag, img_item)
 
     def _canvas_swing_in(done_cb=None):
-        """Bonzi swings in from the right on a drawn vine."""
-        frames = 58
-        def _step(i):
+        """Bonzi swings in from the right on a drawn vine.
+        Physics: damped pendulum with natural overshoot — 3 sub-arcs then settle.
+          θ(t) = θ0 · e^(-ζ·t) · cos(ω·t)
+          ζ=3.1  — medium damping (overshoot left, back, settle)
+          ω=1.35π — slightly above natural freq for peppy entry
+        Total time ~1150 ms at 14 ms ticks (~82 fps)."""
+        DT  = 14   # ms per tick
+        DUR = 1150 # total ms
+        def _step(elapsed):
             if not main.winfo_exists(): return
-            if i >= frames:
+            if elapsed >= DUR:
                 c.coords(img_item, IMG_CX, IMG_CY)
                 _draw_vine(IMG_CX, IMG_CY)
-                # Fade out vine after settling
-                main.after(500, lambda: c.delete('vine') if main.winfo_exists() else None)
-                if done_cb: main.after(600, done_cb)
+                main.after(380, lambda: c.delete('vine') if main.winfo_exists() else None)
+                if done_cb: main.after(480, done_cb)
                 return
-            t  = i / frames
-            θ  = _θ_IN * math.exp(-t * 2.6) * math.cos(math.pi * t * 1.15)
+            t  = elapsed / DUR                              # normalised 0→1
+            θ  = _θ_IN * math.exp(-t * 3.1) * math.cos(math.pi * t * 1.35)
             bx = _VP_X + _VL * math.sin(θ)
             by = _VP_Y + _VL * math.cos(θ)
             c.coords(img_item, int(bx), int(by))
             _draw_vine(int(bx), int(by))
-            main.after(15, lambda: _step(i + 1))
+            main.after(DT, lambda: _step(elapsed + DT))
         _draw_vine(int(_bx0), int(_by0))
         _step(0)
 
     def _canvas_swing_out(done_cb=None):
-        """Bonzi swings left off canvas then window hides."""
-        frames = 38
-        cx0 = c.coords(img_item)[0]
-        cy0 = c.coords(img_item)[1]
-        # Pivot directly above current Bonzi position
-        pvx = cx0; pvy = _VP_Y
-        vl  = cy0 - pvy
-        def _step(i):
+        """Bonzi grabs the vine and swings off to the right — mirror of swing-in.
+        Accelerates outward, exits off the right edge, then window hides."""
+        DT  = 13   # ms per tick — slightly faster than in, feels more decisive
+        DUR = 560  # total ms — quick exit
+        def _step(elapsed):
             if not main.winfo_exists(): return
-            if i >= frames:
+            if elapsed >= DUR:
                 c.delete('vine')
                 main.withdraw()
                 if done_cb: root.after(0, done_cb)
                 return
-            t  = i / frames
-            θ  = -math.radians(88) * (t ** 1.35)
-            bx = pvx + vl * math.sin(θ)
-            by = pvy + vl * math.cos(θ)
+            t  = elapsed / DUR              # 0 → 1
+            # Swing out to the right: start at 0°, accelerate to ~95° (off-canvas)
+            # t^0.65 = fast start (snappy grab) then eases into full extension
+            θ  = math.radians(95) * (t ** 0.65)
+            bx = _VP_X + _VL * math.sin(θ)
+            by = _VP_Y + _VL * math.cos(θ)
             c.coords(img_item, int(bx), int(by))
             _draw_vine(int(bx), int(by))
-            main.after(13, lambda: _step(i + 1))
+            main.after(DT, lambda: _step(elapsed + DT))
+        # Draw vine at current Bonzi position before starting
+        coords = c.coords(img_item)
+        if coords:
+            _draw_vine(int(coords[0]), int(coords[1]))
         _step(0)
 
     # -- Animation engine -------------------------------------------------------
@@ -981,6 +1040,7 @@ def build_bonzi():
     def do_about():
         update_bubble(c, random.choice(ABOUT_LINES)); _play(ANIM_GESTURE, done=_start_idle)
     def _hide():
+        _kill_tts()          # stop whatever is currently speaking
         speak('See ya!')
         _canvas_swing_out()
 

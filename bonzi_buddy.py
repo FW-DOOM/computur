@@ -377,14 +377,21 @@ def _get_rgba(idx):
     return _rgba_cache[idx]
 
 def _get_photo(indices):
-    """Composite several RGBA frames and return a cached PhotoImage."""
+    """Composite RGBA frames → PNG PhotoImage with real alpha transparency.
+    Transparent pixels show canvas items below (the blue background box)
+    instead of the old chroma-green hack which covered canvas items."""
     key = tuple(indices)
     if key not in _photo_cache:
-        bg = Image.new('RGBA', (IMG_W, IMG_H), (0, 254, 1, 255))
+        composite = Image.new('RGBA', (IMG_W, IMG_H), (0, 0, 0, 0))
         for idx in indices:
             layer = _get_rgba(idx)
-            bg.paste(layer, (0, 0), layer)
-        _photo_cache[key] = ImageTk.PhotoImage(bg.convert('RGB'))
+            composite = Image.alpha_composite(composite, layer)
+        buf = io.BytesIO()
+        composite.save(buf, format='PNG')
+        buf.seek(0)
+        # tk.PhotoImage natively supports PNG alpha in tkinter 8.6+
+        _photo_cache[key] = tk.PhotoImage(
+            data=base64.b64encode(buf.read()).decode('ascii'))
     return _photo_cache[key]
 
 

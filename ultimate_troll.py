@@ -238,10 +238,11 @@ def _get_rgba(idx):
 def _get_photo(indices):
     key = tuple(indices)
     if key not in _photo_cache:
-        bg = Image.new('RGBA',(IMG_W,IMG_H),(0,254,1,255))
+        comp = Image.new('RGBA',(IMG_W,IMG_H),(0,0,0,0))
         for idx in indices:
-            layer = _get_rgba(idx); bg.paste(layer,(0,0),layer)
-        _photo_cache[key] = ImageTk.PhotoImage(bg.convert('RGB'))
+            comp = Image.alpha_composite(comp, _get_rgba(idx))
+        buf = io.BytesIO(); comp.save(buf,'PNG'); buf.seek(0)
+        _photo_cache[key] = tk.PhotoImage(data=base64.b64encode(buf.read()).decode('ascii'))
     return _photo_cache[key]
 
 ANIM_BLINK   = [((0,),80),((0,26),80),((0,27),120),((0,26),80),((0,),80)]
